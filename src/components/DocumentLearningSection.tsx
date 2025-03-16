@@ -1,6 +1,6 @@
-
 import { useState, useRef } from "react";
 import { FileText, Upload, MessageSquare, Calendar, Clock, X, Plus, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DocumentLearningSection() {
   // State for document upload and processing
@@ -11,6 +11,7 @@ export default function DocumentLearningSection() {
   const [userInput, setUserInput] = useState('');
   const [selectedTab, setSelectedTab] = useState<'chat' | 'schedule'>('chat');
   const [studyPlan, setStudyPlan] = useState<{day: number, title: string, description: string, isComplete: boolean}[]>([]);
+  const [documentSections, setDocumentSections] = useState<{title: string, content: string}[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -19,25 +20,69 @@ export default function DocumentLearningSection() {
     const file = e.target.files?.[0];
     if (file) {
       setIsProcessing(true);
+      toast.info(`Processing ${file.name}...`);
       
       // Use FileReader to read the file content
       const reader = new FileReader();
       reader.onload = (event) => {
         const content = event.target?.result as string;
         
-        // For demo purposes, we'll use the first 500 chars of content
-        setDocumentContent(content.substring(0, 500) + "...");
+        // Store the full content
+        setDocumentContent(content);
         setDocumentName(file.name);
+        
+        // Process document into sections (in a real app, this would use NLP)
+        processDocumentIntoSections(content);
         
         // Simulate document processing
         setTimeout(() => {
           setIsProcessing(false);
           generateMockStudyPlan();
+          toast.success(`Document "${file.name}" processed successfully`);
         }, 1500);
       };
       
       reader.readAsText(file);
     }
+  };
+
+  // Process document into sections (simplified for demo)
+  const processDocumentIntoSections = (content: string) => {
+    // This is a simplified version - in a real app, this would use NLP to identify sections
+    const sections = [];
+    
+    // Split by lines and create sections (simple approach)
+    const lines = content.split('\n').filter(line => line.trim().length > 0);
+    
+    // Create mock sections
+    let currentSection = { title: "Introduction", content: "" };
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // If line might be a heading (short line)
+      if (line.length < 50 && !line.endsWith('.') && !currentSection.content) {
+        currentSection.title = line;
+      } else {
+        currentSection.content += line + " ";
+        
+        // Create a new section every ~500 characters
+        if (currentSection.content.length > 500 && i < lines.length - 1) {
+          sections.push({...currentSection});
+          // Generate a title based on content for the next section
+          const nextTitle = `Section ${sections.length + 1}`;
+          currentSection = { title: nextTitle, content: "" };
+        }
+      }
+    }
+    
+    // Add the last section if it has content
+    if (currentSection.content) {
+      sections.push(currentSection);
+    }
+    
+    setDocumentSections(sections);
+    console.log("Processed document sections:", sections);
   };
 
   // Remove uploaded document
@@ -46,9 +91,46 @@ export default function DocumentLearningSection() {
     setDocumentContent(null);
     setChatMessages([]);
     setStudyPlan([]);
+    setDocumentSections([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    toast.info("Document removed");
+  };
+
+  // Find relevant document section for the query
+  const findRelevantSection = (query: string): string => {
+    if (!documentSections.length) return "";
+    
+    // Simple keyword matching (in a real app, this would use embeddings and semantic search)
+    const queryWords = query.toLowerCase().split(' ')
+      .filter(word => word.length > 3) // Only consider words longer than 3 chars
+      .map(word => word.replace(/[.,?!;:]/g, '')); // Remove punctuation
+    
+    if (queryWords.length === 0) return documentSections[0].content;
+    
+    // Score each section based on keyword matches
+    const sectionScores = documentSections.map(section => {
+      const sectionContent = section.content.toLowerCase();
+      let score = 0;
+      
+      queryWords.forEach(word => {
+        if (sectionContent.includes(word)) {
+          score += 1;
+          
+          // Bonus for words in the title
+          if (section.title.toLowerCase().includes(word)) {
+            score += 2;
+          }
+        }
+      });
+      
+      return { section, score };
+    });
+    
+    // Sort by score and take the highest scoring section
+    sectionScores.sort((a, b) => b.score - a.score);
+    return sectionScores[0].section.content;
   };
 
   // Handle chat input
@@ -59,51 +141,109 @@ export default function DocumentLearningSection() {
     setChatMessages([...chatMessages, newMessage]);
     setUserInput('');
     
-    // Simulate AI response
+    if (!documentContent) {
+      // No document uploaded
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "Please upload a document first so I can answer questions about it." 
+        }]);
+      }, 500);
+      return;
+    }
+    
+    // Simulate AI response based on document content
     setTimeout(() => {
-      const responses = [
-        "Based on the document, the key concept is related to learning processes and cognitive functions.",
-        "The document suggests reviewing this material in smaller chunks for better retention.",
-        "According to the text, this concept builds on fundamentals that should be mastered first.",
-        "I'd recommend focusing on the examples provided in the third section of the document.",
-        "The document doesn't explicitly cover this topic. Would you like me to recommend related resources?"
-      ];
+      const relevantSection = findRelevantSection(newMessage.content);
       
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      setChatMessages(prev => [...prev, { role: 'assistant', content: randomResponse }]);
+      // Generate a response based on the query and relevant section
+      const response = generateResponse(newMessage.content, relevantSection);
+      
+      setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
     }, 1000);
+  };
+
+  // Generate a response based on the query and relevant document section
+  const generateResponse = (query: string, relevantContent: string): string => {
+    if (!relevantContent) {
+      return "I couldn't find information related to your question in the document. Could you try rephrasing your question?";
+    }
+    
+    // Extract sentences from the relevant content that might contain the answer
+    const sentences = relevantContent.split('.').filter(s => s.trim().length > 0);
+    
+    // Simple keyword matching (in a real app, this would use an LLM)
+    const queryWords = query.toLowerCase().split(' ')
+      .filter(word => word.length > 3)
+      .map(word => word.replace(/[.,?!;:]/g, ''));
+    
+    // Find sentences with the most keyword matches
+    const matchedSentences = sentences.filter(sentence => {
+      const sentenceLower = sentence.toLowerCase();
+      return queryWords.some(word => sentenceLower.includes(word));
+    });
+    
+    if (matchedSentences.length > 0) {
+      // Combine the matched sentences into a response
+      return matchedSentences.join('. ') + '.';
+    } else {
+      // If no direct matches, return a portion of the relevant content
+      const excerpt = relevantContent.substring(0, 200) + "...";
+      return `Based on the document, I found this information which might be relevant: "${excerpt}"`;
+    }
   };
 
   // Generate a mock study plan
   const generateMockStudyPlan = () => {
-    const mockPlan = [
-      {
-        day: 1,
-        title: "Introduction & Fundamentals",
-        description: "Review the core concepts and terminology introduced in the first section.",
-        isComplete: false
-      },
-      {
-        day: 2,
-        title: "Key Methodologies",
-        description: "Study the methodological approaches outlined in the middle sections.",
-        isComplete: false
-      },
-      {
-        day: 3,
-        title: "Advanced Applications",
-        description: "Focus on the practical applications and case studies.",
-        isComplete: false
-      },
-      {
-        day: 4,
-        title: "Review & Synthesis",
-        description: "Synthesize all concepts and prepare summary notes.",
-        isComplete: false
-      }
-    ];
+    if (!documentSections.length) {
+      const mockPlan = [
+        {
+          day: 1,
+          title: "Introduction & Fundamentals",
+          description: "Review the core concepts and terminology introduced in the first section.",
+          isComplete: false
+        },
+        {
+          day: 2,
+          title: "Key Methodologies",
+          description: "Study the methodological approaches outlined in the middle sections.",
+          isComplete: false
+        },
+        {
+          day: 3,
+          title: "Advanced Applications",
+          description: "Focus on the practical applications and case studies.",
+          isComplete: false
+        },
+        {
+          day: 4,
+          title: "Review & Synthesis",
+          description: "Synthesize all concepts and prepare summary notes.",
+          isComplete: false
+        }
+      ];
+      
+      setStudyPlan(mockPlan);
+      return;
+    }
     
-    setStudyPlan(mockPlan);
+    // Create a study plan based on the document sections
+    const plan = documentSections.map((section, index) => ({
+      day: index + 1,
+      title: section.title,
+      description: `Study the concepts related to ${section.title.toLowerCase()}.`,
+      isComplete: false
+    }));
+    
+    // Add a review day at the end
+    plan.push({
+      day: plan.length + 1,
+      title: "Final Review",
+      description: "Synthesize all concepts and prepare summary notes.",
+      isComplete: false
+    });
+    
+    setStudyPlan(plan);
   };
 
   return (

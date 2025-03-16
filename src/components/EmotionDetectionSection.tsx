@@ -1,6 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Camera, Mic, AlertCircle, X, Play, Info } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EmotionDetectionSection() {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
@@ -16,18 +17,36 @@ export default function EmotionDetectionSection() {
   // Request camera permission
   const requestCameraPermission = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Clear previous stream if it exists
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      console.log("Requesting camera permission...");
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: "user" 
+        } 
+      });
+      
+      console.log("Camera permission granted, setting up video stream");
       setCameraPermission(true);
       mediaStreamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play()
+          .then(() => console.log("Video playback started"))
+          .catch(err => console.error("Error playing video:", err));
       }
       
       return true;
     } catch (error) {
       console.error("Error accessing camera:", error);
       setCameraPermission(false);
+      toast.error("Camera access denied. Please enable camera permissions and try again.");
       return false;
     }
   };
@@ -35,30 +54,38 @@ export default function EmotionDetectionSection() {
   // Request microphone permission
   const requestMicPermission = async () => {
     try {
+      console.log("Requesting microphone permission...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Microphone permission granted");
       setMicPermission(true);
       return true;
     } catch (error) {
       console.error("Error accessing microphone:", error);
       setMicPermission(false);
+      toast.error("Microphone access denied. Please enable microphone permissions and try again.");
       return false;
     }
   };
 
   // Start emotion analysis
   const startAnalysis = async () => {
+    console.log("Starting analysis...");
     const hasCamera = cameraPermission || await requestCameraPermission();
     const hasMic = micPermission || await requestMicPermission();
     
     if (hasCamera && hasMic) {
       setIsAnalyzing(true);
+      toast.success("Emotion detection started");
       // Simulate emotion detection with random emotions
       simulateEmotionDetection();
+    } else {
+      toast.error("Both camera and microphone access are required for emotion detection");
     }
   };
 
   // Stop emotion analysis
   const stopAnalysis = () => {
+    console.log("Stopping analysis...");
     setIsAnalyzing(false);
     
     // Stop all tracks from the media stream
@@ -70,6 +97,8 @@ export default function EmotionDetectionSection() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    
+    toast.info("Emotion detection stopped");
   };
 
   // Cleanup on component unmount
@@ -85,6 +114,7 @@ export default function EmotionDetectionSection() {
   const simulateEmotionDetection = () => {
     if (!isAnalyzing) return;
     
+    console.log("Simulating emotion detection...");
     const emotions = ["happy", "focused", "confused", "stressed", "neutral"];
     const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
     
@@ -148,15 +178,14 @@ export default function EmotionDetectionSection() {
           {/* Camera Feed & Controls */}
           <div className="glass-card p-6 flex flex-col">
             <div className="relative aspect-video bg-black/10 dark:bg-white/5 rounded-lg overflow-hidden mb-4">
-              {isAnalyzing ? (
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-cover"
+              />
+              {!isAnalyzing && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Camera className="w-12 h-12 text-muted-foreground opacity-50" />
                 </div>
