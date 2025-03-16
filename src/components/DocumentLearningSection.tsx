@@ -1,6 +1,13 @@
+
 import { useState, useRef } from "react";
 import { FileText, Upload, MessageSquare, Calendar, Clock, X, Plus, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  processDocumentWithOpenAI, 
+  getOpenAIChatResponse, 
+  generateStudyPlanWithOpenAI,
+  DocumentSection 
+} from "../utils/openaiService";
 
 export default function DocumentLearningSection() {
   // State for document upload and processing
@@ -11,12 +18,12 @@ export default function DocumentLearningSection() {
   const [userInput, setUserInput] = useState('');
   const [selectedTab, setSelectedTab] = useState<'chat' | 'schedule'>('chat');
   const [studyPlan, setStudyPlan] = useState<{day: number, title: string, description: string, isComplete: boolean}[]>([]);
-  const [documentSections, setDocumentSections] = useState<{title: string, content: string}[]>([]);
+  const [documentSections, setDocumentSections] = useState<DocumentSection[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle document upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setIsProcessing(true);
@@ -24,65 +31,34 @@ export default function DocumentLearningSection() {
       
       // Use FileReader to read the file content
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const content = event.target?.result as string;
         
         // Store the full content
         setDocumentContent(content);
         setDocumentName(file.name);
         
-        // Process document into sections (in a real app, this would use NLP)
-        processDocumentIntoSections(content);
-        
-        // Simulate document processing
-        setTimeout(() => {
+        try {
+          // Process document into sections using OpenAI
+          const sections = await processDocumentWithOpenAI(content);
+          setDocumentSections(sections);
+          console.log("Processed document sections:", sections);
+          
+          // Generate study plan based on sections
+          const plan = await generateStudyPlanWithOpenAI(sections);
+          setStudyPlan(plan);
+          
           setIsProcessing(false);
-          generateMockStudyPlan();
           toast.success(`Document "${file.name}" processed successfully`);
-        }, 1500);
+        } catch (error) {
+          console.error("Error during document processing:", error);
+          setIsProcessing(false);
+          toast.error("Failed to process document. Please try again.");
+        }
       };
       
       reader.readAsText(file);
     }
-  };
-
-  // Process document into sections (simplified for demo)
-  const processDocumentIntoSections = (content: string) => {
-    // This is a simplified version - in a real app, this would use NLP to identify sections
-    const sections = [];
-    
-    // Split by lines and create sections (simple approach)
-    const lines = content.split('\n').filter(line => line.trim().length > 0);
-    
-    // Create mock sections
-    let currentSection = { title: "Introduction", content: "" };
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // If line might be a heading (short line)
-      if (line.length < 50 && !line.endsWith('.') && !currentSection.content) {
-        currentSection.title = line;
-      } else {
-        currentSection.content += line + " ";
-        
-        // Create a new section every ~500 characters
-        if (currentSection.content.length > 500 && i < lines.length - 1) {
-          sections.push({...currentSection});
-          // Generate a title based on content for the next section
-          const nextTitle = `Section ${sections.length + 1}`;
-          currentSection = { title: nextTitle, content: "" };
-        }
-      }
-    }
-    
-    // Add the last section if it has content
-    if (currentSection.content) {
-      sections.push(currentSection);
-    }
-    
-    setDocumentSections(sections);
-    console.log("Processed document sections:", sections);
   };
 
   // Remove uploaded document
@@ -134,7 +110,7 @@ export default function DocumentLearningSection() {
   };
 
   // Handle chat input
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!userInput.trim()) return;
     
     const newMessage = { role: 'user' as const, content: userInput.trim() };
@@ -152,98 +128,42 @@ export default function DocumentLearningSection() {
       return;
     }
     
-    // Simulate AI response based on document content
-    setTimeout(() => {
+    // Show loading state
+    setChatMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: "Analyzing document content..." 
+    }]);
+    
+    try {
+      // Find the most relevant section for the query
       const relevantSection = findRelevantSection(newMessage.content);
       
-      // Generate a response based on the query and relevant section
-      const response = generateResponse(newMessage.content, relevantSection);
+      // Get response from OpenAI
+      const response = await getOpenAIChatResponse(
+        newMessage.content, 
+        documentContent,
+        relevantSection
+      );
       
-      setChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    }, 1000);
-  };
-
-  // Generate a response based on the query and relevant document section
-  const generateResponse = (query: string, relevantContent: string): string => {
-    if (!relevantContent) {
-      return "I couldn't find information related to your question in the document. Could you try rephrasing your question?";
+      // Update with the actual response and remove the loading message
+      setChatMessages(prev => {
+        // Remove the last "loading" message
+        const withoutLoading = prev.slice(0, -1);
+        // Add the actual response
+        return [...withoutLoading, { role: 'assistant', content: response }];
+      });
+    } catch (error) {
+      console.error("Error getting AI response:", error);
+      setChatMessages(prev => {
+        // Remove the last "loading" message
+        const withoutLoading = prev.slice(0, -1);
+        // Add an error message
+        return [...withoutLoading, { 
+          role: 'assistant', 
+          content: "I'm having trouble analyzing the document. Please try again." 
+        }];
+      });
     }
-    
-    // Extract sentences from the relevant content that might contain the answer
-    const sentences = relevantContent.split('.').filter(s => s.trim().length > 0);
-    
-    // Simple keyword matching (in a real app, this would use an LLM)
-    const queryWords = query.toLowerCase().split(' ')
-      .filter(word => word.length > 3)
-      .map(word => word.replace(/[.,?!;:]/g, ''));
-    
-    // Find sentences with the most keyword matches
-    const matchedSentences = sentences.filter(sentence => {
-      const sentenceLower = sentence.toLowerCase();
-      return queryWords.some(word => sentenceLower.includes(word));
-    });
-    
-    if (matchedSentences.length > 0) {
-      // Combine the matched sentences into a response
-      return matchedSentences.join('. ') + '.';
-    } else {
-      // If no direct matches, return a portion of the relevant content
-      const excerpt = relevantContent.substring(0, 200) + "...";
-      return `Based on the document, I found this information which might be relevant: "${excerpt}"`;
-    }
-  };
-
-  // Generate a mock study plan
-  const generateMockStudyPlan = () => {
-    if (!documentSections.length) {
-      const mockPlan = [
-        {
-          day: 1,
-          title: "Introduction & Fundamentals",
-          description: "Review the core concepts and terminology introduced in the first section.",
-          isComplete: false
-        },
-        {
-          day: 2,
-          title: "Key Methodologies",
-          description: "Study the methodological approaches outlined in the middle sections.",
-          isComplete: false
-        },
-        {
-          day: 3,
-          title: "Advanced Applications",
-          description: "Focus on the practical applications and case studies.",
-          isComplete: false
-        },
-        {
-          day: 4,
-          title: "Review & Synthesis",
-          description: "Synthesize all concepts and prepare summary notes.",
-          isComplete: false
-        }
-      ];
-      
-      setStudyPlan(mockPlan);
-      return;
-    }
-    
-    // Create a study plan based on the document sections
-    const plan = documentSections.map((section, index) => ({
-      day: index + 1,
-      title: section.title,
-      description: `Study the concepts related to ${section.title.toLowerCase()}.`,
-      isComplete: false
-    }));
-    
-    // Add a review day at the end
-    plan.push({
-      day: plan.length + 1,
-      title: "Final Review",
-      description: "Synthesize all concepts and prepare summary notes.",
-      isComplete: false
-    });
-    
-    setStudyPlan(plan);
   };
 
   return (
@@ -296,6 +216,7 @@ export default function DocumentLearningSection() {
                 <button 
                   className="p-2 rounded-full hover:bg-secondary/80 transition-all"
                   onClick={removeDocument}
+                  disabled={isProcessing}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -303,7 +224,11 @@ export default function DocumentLearningSection() {
               
               <div className="bg-secondary/30 rounded-lg p-4 mb-4 text-sm max-h-[200px] overflow-y-auto scrollbar-hide">
                 <p className="text-muted-foreground">Preview:</p>
-                <p className="mt-2">{documentContent}</p>
+                <p className="mt-2">
+                  {isProcessing 
+                    ? "Processing document content..." 
+                    : documentContent?.substring(0, 300) + "..."}
+                </p>
               </div>
               
               <div className="mt-4">
@@ -315,11 +240,11 @@ export default function DocumentLearningSection() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Sections:</span>
-                    <span>4</span>
+                    <span>{documentSections.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Estimated Read Time:</span>
-                    <span>15 mins</span>
+                    <span className="text-muted-foreground">Processing:</span>
+                    <span>{isProcessing ? "In progress..." : "Complete"}</span>
                   </div>
                 </div>
               </div>
@@ -336,6 +261,7 @@ export default function DocumentLearningSection() {
                 <button 
                   className="btn-secondary w-full flex items-center justify-center space-x-2"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessing}
                 >
                   <Upload className="w-4 h-4" />
                   <span>Upload New Document</span>
@@ -406,10 +332,12 @@ export default function DocumentLearningSection() {
                       placeholder="Ask a question about the document..." 
                       className="flex-1 px-4 py-2 rounded-lg bg-secondary/50 border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
                       onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      disabled={isProcessing}
                     />
                     <button 
                       className="btn-primary py-2"
                       onClick={handleSendMessage}
+                      disabled={isProcessing}
                     >
                       Send
                     </button>
@@ -419,11 +347,18 @@ export default function DocumentLearningSection() {
                 <>
                   {/* Study Plan */}
                   <div className="space-y-4">
-                    {studyPlan.length === 0 ? (
+                    {isProcessing ? (
+                      <div className="p-8 text-center">
+                        <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2 animate-pulse" />
+                        <p className="text-muted-foreground">
+                          Creating your personalized study plan...
+                        </p>
+                      </div>
+                    ) : studyPlan.length === 0 ? (
                       <div className="p-8 text-center">
                         <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                         <p className="text-muted-foreground">
-                          Loading your personalized study plan...
+                          Upload and process a document to generate a study plan.
                         </p>
                       </div>
                     ) : (
