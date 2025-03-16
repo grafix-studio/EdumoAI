@@ -1,6 +1,7 @@
 
 import { toast } from "sonner";
 
+// Using OpenAI API key instead of Together.xyz API
 const OPENAI_API_KEY = "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";
 
 export interface DocumentSection {
@@ -10,14 +11,14 @@ export interface DocumentSection {
 
 export async function processDocumentWithOpenAI(content: string): Promise<DocumentSection[]> {
   try {
-    const response = await fetch("https://api.together.xyz/v1/completions", {
+    const response = await fetch("https://api.openai.com/v1/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        model: "gpt-4o-mini",
         prompt: `You are an AI assistant that helps with processing documents. I will provide you with a document text, and you need to analyze it and break it down into logical sections.
 
 For each section, provide a title and the corresponding content. Format your response as a JSON array of objects, where each object has a "title" and "content" field.
@@ -64,14 +65,14 @@ export async function getOpenAIChatResponse(
   relevantSection: string
 ): Promise<string> {
   try {
-    const response = await fetch("https://api.together.xyz/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -116,14 +117,14 @@ export async function generateStudyPlanWithOpenAI(sections: DocumentSection[]): 
     // Prepare sections data for the API
     const sectionTitles = sections.map(section => section.title).join(", ");
     
-    const response = await fetch("https://api.together.xyz/v1/completions", {
+    const response = await fetch("https://api.openai.com/v1/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        model: "gpt-4o-mini",
         prompt: `You are an AI assistant that creates study plans. Based on the following document sections, create a study plan with daily learning objectives.
 
 Document sections: ${sectionTitles}
