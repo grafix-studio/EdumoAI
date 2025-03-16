@@ -1,17 +1,31 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Camera, Mic, AlertCircle, X, Play, Info } from "lucide-react";
+import { Camera, Mic, AlertCircle, X, Play, Info, Smile, Frown, Meh, Heart, HeartCrack, AlertTriangle, Brain, BookOpen, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 export default function EmotionDetectionSection() {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState<string | null>(null);
-  const [emotionHistory, setEmotionHistory] = useState<{emotion: string, timestamp: number}[]>([]);
+  const [emotionHistory, setEmotionHistory] = useState<{emotion: string, timestamp: number, score: number}[]>([]);
   const [showInfo, setShowInfo] = useState(false);
-  
+  const [stressLevel, setStressLevel] = useState<number>(0);
+  const [engagementLevel, setEngagementLevel] = useState<number>(0);
+  const [focusLevel, setFocusLevel] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<string>("trends");
+
+  // Face detection interval ref
+  const faceDetectionIntervalRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
   // Request camera permission
@@ -37,9 +51,11 @@ export default function EmotionDetectionSection() {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play()
-          .then(() => console.log("Video playback started"))
-          .catch(err => console.error("Error playing video:", err));
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play()
+            .then(() => console.log("Video playback started"))
+            .catch(err => console.error("Error playing video:", err));
+        };
       }
       
       return true;
@@ -67,6 +83,86 @@ export default function EmotionDetectionSection() {
     }
   };
 
+  // Process frames to detect emotions (in a real app, would use actual ML model)
+  const processVideoFrame = () => {
+    if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
+    
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    
+    // Draw the current video frame onto the canvas
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    // In a real implementation, you would now pass this frame to an emotion detection API
+    // For this demo, we'll simulate by detecting random emotions with weighted probabilities
+    const emotions = ["happy", "neutral", "sad", "confused", "stressed", "focused"];
+    const weights = [0.25, 0.2, 0.15, 0.15, 0.15, 0.1]; // Higher probability for happy/neutral
+    
+    // Weighted random selection
+    let random = Math.random();
+    let emotionIndex = 0;
+    let cumulativeWeight = 0;
+    
+    for (let i = 0; i < weights.length; i++) {
+      cumulativeWeight += weights[i];
+      if (random < cumulativeWeight) {
+        emotionIndex = i;
+        break;
+      }
+    }
+    
+    const detectedEmotion = emotions[emotionIndex];
+    const confidenceScore = 0.5 + Math.random() * 0.5; // Random score between 0.5 and 1.0
+    
+    // Update state with the detected emotion
+    if (detectedEmotion !== currentEmotion) {
+      setCurrentEmotion(detectedEmotion);
+      
+      // Update emotion history
+      setEmotionHistory(prev => [...prev, {
+        emotion: detectedEmotion,
+        timestamp: Date.now(),
+        score: confidenceScore
+      }].slice(-12)); // Keep last 12 emotions
+      
+      // Update stress level based on emotion (in a real app, would come from ML model)
+      if (detectedEmotion === "stressed") {
+        setStressLevel(75 + Math.floor(Math.random() * 25));
+      } else if (detectedEmotion === "confused") {
+        setStressLevel(50 + Math.floor(Math.random() * 25));
+      } else if (detectedEmotion === "sad") {
+        setStressLevel(40 + Math.floor(Math.random() * 30));
+      } else if (detectedEmotion === "neutral") {
+        setStressLevel(20 + Math.floor(Math.random() * 20));
+      } else if (detectedEmotion === "focused") {
+        setStressLevel(10 + Math.floor(Math.random() * 15));
+      } else {
+        setStressLevel(5 + Math.floor(Math.random() * 10));
+      }
+      
+      // Update engagement level
+      if (detectedEmotion === "focused" || detectedEmotion === "happy") {
+        setEngagementLevel(80 + Math.floor(Math.random() * 20));
+      } else if (detectedEmotion === "neutral") {
+        setEngagementLevel(50 + Math.floor(Math.random() * 30));
+      } else {
+        setEngagementLevel(30 + Math.floor(Math.random() * 40));
+      }
+      
+      // Update focus level
+      if (detectedEmotion === "focused") {
+        setFocusLevel(85 + Math.floor(Math.random() * 15));
+      } else if (detectedEmotion === "happy") {
+        setFocusLevel(70 + Math.floor(Math.random() * 20));
+      } else if (detectedEmotion === "neutral") {
+        setFocusLevel(50 + Math.floor(Math.random() * 20));
+      } else {
+        setFocusLevel(20 + Math.floor(Math.random() * 30));
+      }
+    }
+  };
+
   // Start emotion analysis
   const startAnalysis = async () => {
     console.log("Starting analysis...");
@@ -76,8 +172,24 @@ export default function EmotionDetectionSection() {
     if (hasCamera && hasMic) {
       setIsAnalyzing(true);
       toast.success("Emotion detection started");
-      // Simulate emotion detection with random emotions
-      simulateEmotionDetection();
+      
+      // Initialize the first emotion if not set
+      if (!currentEmotion) {
+        setCurrentEmotion("neutral");
+        setEmotionHistory([{
+          emotion: "neutral", 
+          timestamp: Date.now(),
+          score: 0.8
+        }]);
+        setStressLevel(25);
+        setEngagementLevel(60);
+        setFocusLevel(55);
+      }
+      
+      // Set up frame processing interval (30fps)
+      if (faceDetectionIntervalRef.current === null) {
+        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 1000 / 30);
+      }
     } else {
       toast.error("Both camera and microphone access are required for emotion detection");
     }
@@ -87,6 +199,12 @@ export default function EmotionDetectionSection() {
   const stopAnalysis = () => {
     console.log("Stopping analysis...");
     setIsAnalyzing(false);
+    
+    // Clear the detection interval
+    if (faceDetectionIntervalRef.current !== null) {
+      clearInterval(faceDetectionIntervalRef.current);
+      faceDetectionIntervalRef.current = null;
+    }
     
     // Stop all tracks from the media stream
     if (mediaStreamRef.current) {
@@ -104,29 +222,15 @@ export default function EmotionDetectionSection() {
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
+      if (faceDetectionIntervalRef.current !== null) {
+        clearInterval(faceDetectionIntervalRef.current);
+      }
+      
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
-
-  // Simulate emotion detection (in a real app, this would use an actual API)
-  const simulateEmotionDetection = () => {
-    if (!isAnalyzing) return;
-    
-    console.log("Simulating emotion detection...");
-    const emotions = ["happy", "focused", "confused", "stressed", "neutral"];
-    const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
-    
-    setCurrentEmotion(randomEmotion);
-    setEmotionHistory(prev => [...prev, {
-      emotion: randomEmotion,
-      timestamp: Date.now()
-    }].slice(-10)); // Keep only last 10 emotions
-    
-    // Continue simulation if still analyzing
-    setTimeout(simulateEmotionDetection, 3000);
-  };
 
   // Get emotion recommendation
   const getEmotionRecommendation = () => {
@@ -141,9 +245,83 @@ export default function EmotionDetectionSection() {
         return "You seem a bit confused. Consider reviewing fundamentals or asking for clarification.";
       case "stressed":
         return "Stress detected. Try taking a short break or some deep breathing exercises.";
+      case "sad":
+        return "You seem a bit down. Consider a short break or switching to a more engaging topic.";
       default:
         return "Maintaining steady engagement. Continue your learning session.";
     }
+  };
+
+  // Get specific learning content recommendations based on emotion
+  const getLearningContentRecommendations = () => {
+    if (!currentEmotion) return [];
+    
+    switch (currentEmotion) {
+      case "happy":
+        return [
+          { title: "Advanced Problem Solving", description: "Challenge yourself with complex problems that require critical thinking" },
+          { title: "Project-Based Learning", description: "Work on creative projects that apply multiple concepts" },
+          { title: "Peer Teaching", description: "Explain concepts to others to reinforce your understanding" }
+        ];
+      case "focused":
+        return [
+          { title: "Deep Dive Sessions", description: "Extended focus on a single complex topic" },
+          { title: "Analytical Reading", description: "Critical analysis of challenging texts or research papers" },
+          { title: "Technical Skill Building", description: "Practice specialized skills that require precision" }
+        ];
+      case "confused":
+        return [
+          { title: "Concept Mapping", description: "Create visual representations of relationships between concepts" },
+          { title: "Simplified Tutorials", description: "Step-by-step guides covering fundamentals" },
+          { title: "Interactive Demonstrations", description: "Watch visual explanations with examples" }
+        ];
+      case "stressed":
+        return [
+          { title: "Microlearning", description: "Short, focused lessons on one concept at a time" },
+          { title: "Guided Practice", description: "Structured exercises with immediate feedback" },
+          { title: "Review Sessions", description: "Revisit familiar material to build confidence" }
+        ];
+      case "sad":
+        return [
+          { title: "Engaging Multimedia", description: "Video-based learning with interactive elements" },
+          { title: "Social Learning", description: "Collaborative activities with peers" },
+          { title: "Interest-Driven Topics", description: "Focus on subjects you're personally interested in" }
+        ];
+      default:
+        return [
+          { title: "Balanced Learning Mix", description: "Alternate between reading, practice, and application" },
+          { title: "Spaced Repetition", description: "Review material at optimal intervals" },
+          { title: "Self-Assessment", description: "Regular quizzes to identify knowledge gaps" }
+        ];
+    }
+  };
+
+  // Get stress relief recommendations
+  const getStressReliefRecommendations = () => {
+    if (stressLevel < 30) return [];
+    
+    const baseRecommendations = [
+      { title: "Deep Breathing", description: "Take 5 deep breaths, inhaling for 4 counts and exhaling for 6 counts" },
+      { title: "Quick Stretch", description: "Stand up and stretch your arms, shoulders and neck for 30 seconds" },
+      { title: "Mindful Minute", description: "Close your eyes and focus on your breathing for just one minute" }
+    ];
+    
+    if (stressLevel >= 70) {
+      return [
+        ...baseRecommendations,
+        { title: "Progressive Relaxation", description: "Tense and relax each muscle group from your toes to your head" },
+        { title: "Guided Meditation", description: "Follow a short 5-minute guided meditation" },
+        { title: "Change of Environment", description: "Take a 10-minute break in a different location" }
+      ];
+    } else if (stressLevel >= 50) {
+      return [
+        ...baseRecommendations,
+        { title: "Positive Visualization", description: "Spend a moment imagining a peaceful, calming scene" },
+        { title: "Gratitude Practice", description: "Quickly note three things you're grateful for right now" }
+      ];
+    }
+    
+    return baseRecommendations;
   };
 
   // Get emotion color
@@ -156,7 +334,9 @@ export default function EmotionDetectionSection() {
       case "confused":
         return "bg-warning/20 text-warning border-warning/30";
       case "stressed":
-        return "bg-danger/20 text-danger border-danger/30";
+        return "bg-destructive/20 text-destructive border-destructive/30";
+      case "sad":
+        return "bg-warning/20 text-warning border-warning/30";
       default:
         return "bg-secondary text-secondary-foreground";
     }
@@ -173,8 +353,8 @@ export default function EmotionDetectionSection() {
         </p>
       </div>
       
-      <div className="max-w-5xl mx-auto w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Camera Feed & Controls */}
           <div className="glass-card p-6 flex flex-col">
             <div className="relative aspect-video bg-black/10 dark:bg-white/5 rounded-lg overflow-hidden mb-4">
@@ -184,6 +364,12 @@ export default function EmotionDetectionSection() {
                 playsInline 
                 muted 
                 className="w-full h-full object-cover"
+              />
+              <canvas 
+                ref={canvasRef} 
+                className="hidden" 
+                width="640" 
+                height="480"
               />
               {!isAnalyzing && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -196,7 +382,7 @@ export default function EmotionDetectionSection() {
               <div className="flex items-center space-x-2">
                 <div className={`w-3 h-3 rounded-full ${
                   cameraPermission === true ? "bg-success" : 
-                  cameraPermission === false ? "bg-danger" : "bg-muted"
+                  cameraPermission === false ? "bg-destructive" : "bg-muted"
                 }`} />
                 <span className="text-sm font-medium">Camera</span>
               </div>
@@ -204,7 +390,7 @@ export default function EmotionDetectionSection() {
               <div className="flex items-center space-x-2">
                 <div className={`w-3 h-3 rounded-full ${
                   micPermission === true ? "bg-success" : 
-                  micPermission === false ? "bg-danger" : "bg-muted"
+                  micPermission === false ? "bg-destructive" : "bg-muted"
                 }`} />
                 <span className="text-sm font-medium">Microphone</span>
               </div>
@@ -212,21 +398,23 @@ export default function EmotionDetectionSection() {
             
             <div className="mt-auto flex justify-center">
               {!isAnalyzing ? (
-                <button 
-                  className="btn-primary flex items-center space-x-2"
+                <Button 
+                  variant="default"
                   onClick={startAnalysis}
+                  className="flex items-center space-x-2"
                 >
                   <Play className="w-4 h-4" />
                   <span>Start Detection</span>
-                </button>
+                </Button>
               ) : (
-                <button 
-                  className="btn-secondary flex items-center space-x-2"
+                <Button 
+                  variant="secondary"
                   onClick={stopAnalysis}
+                  className="flex items-center space-x-2"
                 >
                   <X className="w-4 h-4" />
                   <span>Stop Detection</span>
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -235,87 +423,232 @@ export default function EmotionDetectionSection() {
           <div className="glass-card p-6 flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-medium">Emotion Analysis</h3>
-              <button 
-                className="p-2 rounded-full hover:bg-secondary/80 transition-all"
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowInfo(!showInfo)}
               >
                 <Info className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
             
             {showInfo && (
-              <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-sm">
-                <p className="mb-2 font-medium">How it works:</p>
-                <p className="text-muted-foreground">
+              <Alert className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>How it works</AlertTitle>
+                <AlertDescription>
                   Our AI analyzes facial micro-expressions and voice patterns to detect emotions.
                   This helps provide personalized learning recommendations based on your current
                   emotional state.
-                </p>
-              </div>
+                </AlertDescription>
+              </Alert>
             )}
             
-            {/* Current Emotion Display */}
-            <div className="mb-6">
-              <p className="text-sm text-muted-foreground mb-2">Current Emotional State:</p>
-              {currentEmotion ? (
-                <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium border ${getEmotionColor(currentEmotion)}`}>
-                  {currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}
-                </div>
-              ) : (
-                <div className="text-muted-foreground italic">Not analyzing</div>
-              )}
-            </div>
-            
-            {/* Recommendation */}
-            {currentEmotion && (
-              <div className="mb-6 p-4 bg-secondary/30 rounded-lg animate-fade-in">
-                <p className="text-sm font-medium mb-1">Recommendation:</p>
-                <p className="text-sm text-muted-foreground">{getEmotionRecommendation()}</p>
-              </div>
-            )}
-            
-            {/* Emotion History Timeline */}
-            <div className="mt-auto">
-              <p className="text-sm text-muted-foreground mb-2">Emotion History:</p>
-              {emotionHistory.length > 0 ? (
-                <div className="flex space-x-2 overflow-x-auto scrollbar-hide pb-2">
-                  {emotionHistory.map((item, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex-shrink-0 px-3 py-1 rounded-full text-xs border ${getEmotionColor(item.emotion)}`}
-                    >
-                      {item.emotion}
+            {/* Current Emotional State */}
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Current State</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    {currentEmotion ? (
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border ${getEmotionColor(currentEmotion)}`}>
+                        {currentEmotion === "happy" && <Smile className="w-4 h-4" />}
+                        {currentEmotion === "sad" && <Frown className="w-4 h-4" />}
+                        {currentEmotion === "neutral" && <Meh className="w-4 h-4" />}
+                        {currentEmotion === "focused" && <Brain className="w-4 h-4" />}
+                        {currentEmotion === "confused" && <AlertTriangle className="w-4 h-4" />}
+                        {currentEmotion === "stressed" && <HeartCrack className="w-4 h-4" />}
+                        {currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground italic">Not analyzing</div>
+                    )}
+                    
+                    <div className="grid gap-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Stress Level</span>
+                        <span>{stressLevel}%</span>
+                      </div>
+                      <Progress value={stressLevel} className="h-2" />
+                      
+                      <div className="flex justify-between text-sm">
+                        <span>Engagement</span>
+                        <span>{engagementLevel}%</span>
+                      </div>
+                      <Progress value={engagementLevel} className="h-2" />
+                      
+                      <div className="flex justify-between text-sm">
+                        <span>Focus</span>
+                        <span>{focusLevel}%</span>
+                      </div>
+                      <Progress value={focusLevel} className="h-2" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground italic text-sm">No history yet</div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Recommendations based on emotional state */}
+              {currentEmotion && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Recommendations</CardTitle>
+                    <CardDescription>{getEmotionRecommendation()}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="learning" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="learning">Learning Content</TabsTrigger>
+                        <TabsTrigger value="stress">Stress Relief</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="learning" className="mt-4">
+                        <div className="grid gap-3">
+                          {getLearningContentRecommendations().map((rec, i) => (
+                            <div key={i} className="flex gap-2 items-start p-3 rounded-lg bg-secondary/20">
+                              <BookOpen className="w-5 h-5 text-primary mt-0.5" />
+                              <div>
+                                <h4 className="font-medium">{rec.title}</h4>
+                                <p className="text-sm text-muted-foreground">{rec.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="stress" className="mt-4">
+                        <div className="grid gap-3">
+                          {getStressReliefRecommendations().map((rec, i) => (
+                            <div key={i} className="flex gap-2 items-start p-3 rounded-lg bg-secondary/20">
+                              <Heart className="w-5 h-5 text-primary mt-0.5" />
+                              <div>
+                                <h4 className="font-medium">{rec.title}</h4>
+                                <p className="text-sm text-muted-foreground">{rec.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </div>
         </div>
         
-        {/* Chatbot Section */}
+        {/* Emotion History Visualization */}
         <div className="glass-card mt-8 p-6">
-          <h3 className="text-xl font-medium mb-4">AI Learning Assistant</h3>
-          <p className="text-muted-foreground mb-6">
-            Our AI assistant can answer questions and provide learning recommendations based on your emotional state.
-          </p>
-          
-          <div className="bg-secondary/30 rounded-lg p-4 mb-4 min-h-[100px] max-h-[200px] overflow-y-auto scrollbar-hide">
-            <div className="text-sm italic text-muted-foreground">
-              Ask a question about your learning materials or how to optimize your study session.
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <input 
-              type="text" 
-              placeholder="Type your question here..." 
-              className="flex-1 px-4 py-2 rounded-lg bg-secondary/50 border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-            />
-            <button className="btn-primary py-2">Send</button>
-          </div>
+          <CardHeader className="px-0 pt-0">
+            <CardTitle>Emotion History & Trends</CardTitle>
+          </CardHeader>
+          <CardContent className="px-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="trends">Emotion Trends</TabsTrigger>
+                <TabsTrigger value="distribution">Distribution</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="trends" className="mt-4">
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={emotionHistory}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={(timestamp) => new Date(timestamp).toLocaleTimeString()}
+                      />
+                      <YAxis />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">{payload[0].payload.emotion}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(payload[0].payload.timestamp).toLocaleTimeString()}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">Score</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {(payload[0].payload.score * 100).toFixed(0)}%
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="score"
+                        name="Confidence"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="distribution" className="mt-4">
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(
+                          emotionHistory.reduce((acc, { emotion }) => {
+                            acc[emotion] = (acc[emotion] || 0) + 1;
+                            return acc;
+                          }, {} as Record<string, number>)
+                        ).map(([emotion, count]) => ({
+                          name: emotion,
+                          value: count
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={120}
+                        fill="hsl(var(--primary))"
+                        dataKey="value"
+                      >
+                        {emotionHistory.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={`hsl(${index * 45}, 70%, 50%)`}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium">
+                                    {payload[0].name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    Count: {payload[0].value}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
         </div>
       </div>
     </section>
