@@ -3,11 +3,11 @@ import { useState, useRef } from "react";
 import { FileText, Upload, MessageSquare, Calendar, Clock, X, Plus, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { 
-  processDocumentWithGemini, 
-  getGeminiChatResponse, 
-  generateStudyPlanWithGemini,
+  processDocumentWithOpenAI, 
+  getOpenAIChatResponse, 
+  generateStudyPlanWithOpenAI,
   DocumentSection 
-} from "../utils/geminiService";
+} from "../utils/openaiService";
 
 export default function DocumentLearningSection() {
   // State for document upload and processing
@@ -39,13 +39,13 @@ export default function DocumentLearningSection() {
         setDocumentName(file.name);
         
         try {
-          // Process document into sections using Gemini
-          const sections = await processDocumentWithGemini(content);
+          // Process document into sections using OpenAI
+          const sections = await processDocumentWithOpenAI(content);
           setDocumentSections(sections);
           console.log("Processed document sections:", sections);
           
           // Generate study plan based on sections
-          const plan = await generateStudyPlanWithGemini(sections);
+          const plan = await generateStudyPlanWithOpenAI(sections);
           setStudyPlan(plan);
           
           setIsProcessing(false);
@@ -138,8 +138,8 @@ export default function DocumentLearningSection() {
       // Find the most relevant section for the query
       const relevantSection = findRelevantSection(newMessage.content);
       
-      // Get response from Gemini
-      const response = await getGeminiChatResponse(
+      // Get response from OpenAI
+      const response = await getOpenAIChatResponse(
         newMessage.content, 
         documentContent,
         relevantSection

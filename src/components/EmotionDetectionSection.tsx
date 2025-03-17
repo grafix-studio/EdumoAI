@@ -177,7 +177,22 @@ export default function EmotionDetectionSection() {
   // Start emotion analysis
   const startAnalysis = async () => {
     console.log("Starting analysis...");
-    const hasCamera = cameraPermission || await requestCameraPermission();
+    
+    // Ensure media stream is cleared before requesting a new one
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped track:", track.kind);
+      });
+      mediaStreamRef.current = null;
+    }
+    
+    // Reset video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    const hasCamera = await requestCameraPermission();
     const hasMic = micPermission || await requestMicPermission();
     
     if (hasCamera && hasMic) {
