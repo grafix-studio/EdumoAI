@@ -3,6 +3,9 @@ import { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import EmotionDetectionSection from "../components/EmotionDetectionSection";
 import DocumentLearningSection from "../components/DocumentLearningSection";
+import MindActivitiesSection from "../components/MindActivitiesSection";
+import MentorshipSection from "../components/MentorshipSection";
+import TeamSection from "../components/TeamSection";
 import TaskManagerSection from "../components/TaskManagerSection";
 import Footer from "../components/Footer";
 
@@ -29,7 +32,10 @@ const Index = () => {
       <main className="pt-16"> {/* Add padding-top to accommodate fixed navbar */}
         <EmotionDetectionSection />
         <DocumentLearningSection />
+        <MindActivitiesSection />
         <TaskManagerSection />
+        <MentorshipSection />
+        <TeamSection />
       </main>
       
       <Footer />

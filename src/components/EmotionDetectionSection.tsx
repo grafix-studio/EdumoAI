@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { detectEmotion } from "../utils/kairosService";
 
 export default function EmotionDetectionSection() {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
@@ -21,6 +22,7 @@ export default function EmotionDetectionSection() {
   const [engagementLevel, setEngagementLevel] = useState<number>(0);
   const [focusLevel, setFocusLevel] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<string>("trends");
+  const [lastDetectionTime, setLastDetectionTime] = useState<number>(0);
 
   // Face detection interval ref
   const faceDetectionIntervalRef = useRef<number | null>(null);
@@ -33,7 +35,16 @@ export default function EmotionDetectionSection() {
     try {
       // Clear previous stream if it exists
       if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log("Stopped track:", track.kind);
+        });
+        mediaStreamRef.current = null;
+      }
+      
+      // Reset video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
       
       console.log("Requesting camera permission...");
@@ -83,9 +94,13 @@ export default function EmotionDetectionSection() {
     }
   };
 
-  // Process frames to detect emotions (in a real app, would use actual ML model)
-  const processVideoFrame = () => {
+  // Process frames to detect emotions using Kairos API
+  const processVideoFrame = async () => {
     if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
+    
+    // Only run detection every 2 seconds to avoid API rate limits
+    const now = Date.now();
+    if (now - lastDetectionTime < 2000) return;
     
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
@@ -94,72 +109,68 @@ export default function EmotionDetectionSection() {
     // Draw the current video frame onto the canvas
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     
-    // In a real implementation, you would now pass this frame to an emotion detection API
-    // For this demo, we'll simulate by detecting random emotions with weighted probabilities
-    const emotions = ["happy", "neutral", "sad", "confused", "stressed", "focused"];
-    const weights = [0.25, 0.2, 0.15, 0.15, 0.15, 0.1]; // Higher probability for happy/neutral
-    
-    // Weighted random selection
-    let random = Math.random();
-    let emotionIndex = 0;
-    let cumulativeWeight = 0;
-    
-    for (let i = 0; i < weights.length; i++) {
-      cumulativeWeight += weights[i];
-      if (random < cumulativeWeight) {
-        emotionIndex = i;
-        break;
+    try {
+      // Convert canvas to base64 image
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      setLastDetectionTime(now);
+      
+      // Call Kairos API for emotion detection
+      const emotionResult = await detectEmotion(imageData);
+      
+      // Update emotion state
+      if (emotionResult.emotion !== currentEmotion) {
+        setCurrentEmotion(emotionResult.emotion);
+        
+        // Update emotion history
+        setEmotionHistory(prev => [...prev, {
+          emotion: emotionResult.emotion,
+          timestamp: Date.now(),
+          score: emotionResult.confidence
+        }].slice(-12)); // Keep last 12 emotions
+        
+        // Update stress level based on emotion
+        updateMetricsBasedOnEmotion(emotionResult.emotion);
       }
+    } catch (error) {
+      console.error("Error detecting emotion:", error);
+    }
+  };
+
+  // Update metrics based on detected emotion
+  const updateMetricsBasedOnEmotion = (emotion: string) => {
+    // Update stress level based on emotion
+    if (emotion === "stressed") {
+      setStressLevel(75 + Math.floor(Math.random() * 25));
+    } else if (emotion === "confused") {
+      setStressLevel(50 + Math.floor(Math.random() * 25));
+    } else if (emotion === "sad") {
+      setStressLevel(40 + Math.floor(Math.random() * 30));
+    } else if (emotion === "neutral") {
+      setStressLevel(20 + Math.floor(Math.random() * 20));
+    } else if (emotion === "focused") {
+      setStressLevel(10 + Math.floor(Math.random() * 15));
+    } else {
+      setStressLevel(5 + Math.floor(Math.random() * 10));
     }
     
-    const detectedEmotion = emotions[emotionIndex];
-    const confidenceScore = 0.5 + Math.random() * 0.5; // Random score between 0.5 and 1.0
+    // Update engagement level
+    if (emotion === "focused" || emotion === "happy") {
+      setEngagementLevel(80 + Math.floor(Math.random() * 20));
+    } else if (emotion === "neutral") {
+      setEngagementLevel(50 + Math.floor(Math.random() * 30));
+    } else {
+      setEngagementLevel(30 + Math.floor(Math.random() * 40));
+    }
     
-    // Update state with the detected emotion
-    if (detectedEmotion !== currentEmotion) {
-      setCurrentEmotion(detectedEmotion);
-      
-      // Update emotion history
-      setEmotionHistory(prev => [...prev, {
-        emotion: detectedEmotion,
-        timestamp: Date.now(),
-        score: confidenceScore
-      }].slice(-12)); // Keep last 12 emotions
-      
-      // Update stress level based on emotion (in a real app, would come from ML model)
-      if (detectedEmotion === "stressed") {
-        setStressLevel(75 + Math.floor(Math.random() * 25));
-      } else if (detectedEmotion === "confused") {
-        setStressLevel(50 + Math.floor(Math.random() * 25));
-      } else if (detectedEmotion === "sad") {
-        setStressLevel(40 + Math.floor(Math.random() * 30));
-      } else if (detectedEmotion === "neutral") {
-        setStressLevel(20 + Math.floor(Math.random() * 20));
-      } else if (detectedEmotion === "focused") {
-        setStressLevel(10 + Math.floor(Math.random() * 15));
-      } else {
-        setStressLevel(5 + Math.floor(Math.random() * 10));
-      }
-      
-      // Update engagement level
-      if (detectedEmotion === "focused" || detectedEmotion === "happy") {
-        setEngagementLevel(80 + Math.floor(Math.random() * 20));
-      } else if (detectedEmotion === "neutral") {
-        setEngagementLevel(50 + Math.floor(Math.random() * 30));
-      } else {
-        setEngagementLevel(30 + Math.floor(Math.random() * 40));
-      }
-      
-      // Update focus level
-      if (detectedEmotion === "focused") {
-        setFocusLevel(85 + Math.floor(Math.random() * 15));
-      } else if (detectedEmotion === "happy") {
-        setFocusLevel(70 + Math.floor(Math.random() * 20));
-      } else if (detectedEmotion === "neutral") {
-        setFocusLevel(50 + Math.floor(Math.random() * 20));
-      } else {
-        setFocusLevel(20 + Math.floor(Math.random() * 30));
-      }
+    // Update focus level
+    if (emotion === "focused") {
+      setFocusLevel(85 + Math.floor(Math.random() * 15));
+    } else if (emotion === "happy") {
+      setFocusLevel(70 + Math.floor(Math.random() * 20));
+    } else if (emotion === "neutral") {
+      setFocusLevel(50 + Math.floor(Math.random() * 20));
+    } else {
+      setFocusLevel(20 + Math.floor(Math.random() * 30));
     }
   };
 
@@ -186,9 +197,9 @@ export default function EmotionDetectionSection() {
         setFocusLevel(55);
       }
       
-      // Set up frame processing interval (30fps)
+      // Set up frame processing interval (3fps is enough for emotion detection)
       if (faceDetectionIntervalRef.current === null) {
-        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 1000 / 30);
+        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 333);
       }
     } else {
       toast.error("Both camera and microphone access are required for emotion detection");
@@ -208,7 +219,10 @@ export default function EmotionDetectionSection() {
     
     // Stop all tracks from the media stream
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped track:", track.kind);
+      });
       mediaStreamRef.current = null;
     }
     
@@ -247,6 +261,8 @@ export default function EmotionDetectionSection() {
         return "Stress detected. Try taking a short break or some deep breathing exercises.";
       case "sad":
         return "You seem a bit down. Consider a short break or switching to a more engaging topic.";
+      case "bored":
+        return "You seem disengaged. Try switching to interactive content or taking a short break.";
       default:
         return "Maintaining steady engagement. Continue your learning session.";
     }
@@ -287,6 +303,12 @@ export default function EmotionDetectionSection() {
           { title: "Social Learning", description: "Collaborative activities with peers" },
           { title: "Interest-Driven Topics", description: "Focus on subjects you're personally interested in" }
         ];
+      case "bored":
+        return [
+          { title: "Interactive Simulations", description: "Engage with dynamic content that responds to your inputs" },
+          { title: "Gamified Learning", description: "Educational content presented in game format with achievements" },
+          { title: "Challenge-Based Learning", description: "Push yourself with increasingly difficult problems" }
+        ];
       default:
         return [
           { title: "Balanced Learning Mix", description: "Alternate between reading, practice, and application" },
@@ -298,7 +320,10 @@ export default function EmotionDetectionSection() {
 
   // Get stress relief recommendations
   const getStressReliefRecommendations = () => {
-    if (stressLevel < 30) return [];
+    // Always show stress relief for sad or stressed emotions
+    if (!(currentEmotion === "sad" || currentEmotion === "stressed" || stressLevel >= 30)) {
+      return [];
+    }
     
     const baseRecommendations = [
       { title: "Deep Breathing", description: "Take 5 deep breaths, inhaling for 4 counts and exhaling for 6 counts" },
@@ -306,14 +331,14 @@ export default function EmotionDetectionSection() {
       { title: "Mindful Minute", description: "Close your eyes and focus on your breathing for just one minute" }
     ];
     
-    if (stressLevel >= 70) {
+    if (stressLevel >= 70 || currentEmotion === "stressed") {
       return [
         ...baseRecommendations,
         { title: "Progressive Relaxation", description: "Tense and relax each muscle group from your toes to your head" },
         { title: "Guided Meditation", description: "Follow a short 5-minute guided meditation" },
         { title: "Change of Environment", description: "Take a 10-minute break in a different location" }
       ];
-    } else if (stressLevel >= 50) {
+    } else if (stressLevel >= 50 || currentEmotion === "sad") {
       return [
         ...baseRecommendations,
         { title: "Positive Visualization", description: "Spend a moment imagining a peaceful, calming scene" },
@@ -337,6 +362,8 @@ export default function EmotionDetectionSection() {
         return "bg-destructive/20 text-destructive border-destructive/30";
       case "sad":
         return "bg-warning/20 text-warning border-warning/30";
+      case "bored":
+        return "bg-orange-500/20 text-orange-500 border-orange-500/30";
       default:
         return "bg-secondary text-secondary-foreground";
     }
@@ -367,9 +394,9 @@ export default function EmotionDetectionSection() {
               />
               <canvas 
                 ref={canvasRef} 
-                className="hidden" 
                 width="640" 
                 height="480"
+                className="hidden"
               />
               {!isAnalyzing && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -460,6 +487,7 @@ export default function EmotionDetectionSection() {
                         {currentEmotion === "focused" && <Brain className="w-4 h-4" />}
                         {currentEmotion === "confused" && <AlertTriangle className="w-4 h-4" />}
                         {currentEmotion === "stressed" && <HeartCrack className="w-4 h-4" />}
+                        {currentEmotion === "bored" && <Meh className="w-4 h-4" />}
                         {currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}
                       </div>
                     ) : (
@@ -517,15 +545,21 @@ export default function EmotionDetectionSection() {
                       </TabsContent>
                       <TabsContent value="stress" className="mt-4">
                         <div className="grid gap-3">
-                          {getStressReliefRecommendations().map((rec, i) => (
-                            <div key={i} className="flex gap-2 items-start p-3 rounded-lg bg-secondary/20">
-                              <Heart className="w-5 h-5 text-primary mt-0.5" />
-                              <div>
-                                <h4 className="font-medium">{rec.title}</h4>
-                                <p className="text-sm text-muted-foreground">{rec.description}</p>
+                          {getStressReliefRecommendations().length > 0 ? (
+                            getStressReliefRecommendations().map((rec, i) => (
+                              <div key={i} className="flex gap-2 items-start p-3 rounded-lg bg-secondary/20">
+                                <Heart className="w-5 h-5 text-primary mt-0.5" />
+                                <div>
+                                  <h4 className="font-medium">{rec.title}</h4>
+                                  <p className="text-sm text-muted-foreground">{rec.description}</p>
+                                </div>
                               </div>
+                            ))
+                          ) : (
+                            <div className="text-center p-4 text-muted-foreground">
+                              <p>Stress relief recommendations will appear when stress is detected.</p>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </TabsContent>
                     </Tabs>
