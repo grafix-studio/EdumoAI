@@ -46,8 +46,10 @@ export async function detectEmotion(imageData: string): Promise<EmotionResponse>
       let strongestEmotion = "neutral";
       
       Object.entries(emotions).forEach(([emotion, confidence]) => {
-        if (confidence > highestConfidence) {
-          highestConfidence = confidence as number;
+        // Fix: Explicitly cast confidence to number before comparison
+        const confidenceValue = Number(confidence);
+        if (!isNaN(confidenceValue) && confidenceValue > highestConfidence) {
+          highestConfidence = confidenceValue;
           strongestEmotion = emotion;
         }
       });
