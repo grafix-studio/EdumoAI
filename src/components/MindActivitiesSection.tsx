@@ -1,15 +1,23 @@
 
 import React, { useState } from "react";
-import { Brain, Puzzle, Zap, Star, Clock, Award, ArrowRight } from "lucide-react";
+import { Brain, Puzzle, Zap, Star, Clock, Award, ArrowRight, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import MindActivityGame from "./mind-activities/MindActivityGame";
 
 export default function MindActivitiesSection() {
   const [activeTab, setActiveTab] = useState("puzzles");
+  const [currentGame, setCurrentGame] = useState<{
+    id: string;
+    title: string;
+    type: "puzzle" | "exercise" | "daily";
+    difficulty?: string;
+  } | null>(null);
 
   const puzzles = [
     {
+      id: "memory-match",
       title: "Memory Match",
       description: "Test and improve your short-term memory by matching pairs of cards.",
       difficulty: "Beginner",
@@ -18,6 +26,7 @@ export default function MindActivitiesSection() {
       color: "bg-blue-100 dark:bg-blue-950"
     },
     {
+      id: "sudoku",
       title: "Sudoku Challenge",
       description: "Solve number puzzles that test your logical reasoning skills.",
       difficulty: "Intermediate",
@@ -26,6 +35,7 @@ export default function MindActivitiesSection() {
       color: "bg-purple-100 dark:bg-purple-950"
     },
     {
+      id: "word-association",
       title: "Word Association",
       description: "Connect related words and expand your verbal reasoning abilities.",
       difficulty: "Beginner",
@@ -34,6 +44,7 @@ export default function MindActivitiesSection() {
       color: "bg-amber-100 dark:bg-amber-950"
     },
     {
+      id: "pattern-recognition",
       title: "Pattern Recognition",
       description: "Identify and continue visual patterns to enhance cognitive flexibility.",
       difficulty: "Advanced",
@@ -45,6 +56,7 @@ export default function MindActivitiesSection() {
 
   const exercises = [
     {
+      id: "dual-n-back",
       title: "Dual N-Back Training",
       description: "Advanced memory exercise that trains working memory and fluid intelligence.",
       difficulty: "Advanced",
@@ -53,6 +65,7 @@ export default function MindActivitiesSection() {
       color: "bg-red-100 dark:bg-red-950"
     },
     {
+      id: "speed-reading",
       title: "Speed Reading",
       description: "Improve reading speed while maintaining comprehension.",
       difficulty: "Intermediate",
@@ -61,6 +74,7 @@ export default function MindActivitiesSection() {
       color: "bg-emerald-100 dark:bg-emerald-950"
     },
     {
+      id: "critical-thinking",
       title: "Critical Thinking Scenarios",
       description: "Analyze complex scenarios and make logical decisions.",
       difficulty: "Intermediate",
@@ -69,6 +83,7 @@ export default function MindActivitiesSection() {
       color: "bg-sky-100 dark:bg-sky-950"
     },
     {
+      id: "math-fluency",
       title: "Math Fluency",
       description: "Mental math exercises to improve numerical processing speed.",
       difficulty: "Beginner",
@@ -80,18 +95,55 @@ export default function MindActivitiesSection() {
 
   const dailyExercises = [
     {
+      id: "mind-warmup",
       title: "Today's Mind Warm-up",
       description: "A quick sequence of 3 exercises designed to activate different areas of your brain.",
       icon: Zap,
       exercises: ["Word Recall", "Mental Math", "Visual Patterns"]
     },
     {
+      id: "mindfulness",
       title: "Mindfulness Session",
       description: "Guided meditation focused on improving attention and cognitive control.",
       icon: Brain,
       exercises: ["Focused Attention", "Open Monitoring", "Visualization"]
     }
   ];
+
+  const startGame = (id: string, title: string, type: "puzzle" | "exercise" | "daily", difficulty?: string) => {
+    setCurrentGame({ id, title, type, difficulty });
+  };
+
+  const closeGame = () => {
+    setCurrentGame(null);
+  };
+
+  // If a game is active, show the game screen
+  if (currentGame) {
+    return (
+      <section id="mind-activities" className="section">
+        <div className="max-w-6xl mx-auto w-full relative">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">{currentGame.title}</h2>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={closeGame}
+              aria-label="Close game"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          <MindActivityGame 
+            id={currentGame.id}
+            type={currentGame.type}
+            difficulty={currentGame.difficulty}
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="mind-activities" className="section">
@@ -114,8 +166,8 @@ export default function MindActivitiesSection() {
 
           <TabsContent value="puzzles" className="mt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {puzzles.map((puzzle, index) => (
-                <Card key={index} className="overflow-hidden">
+              {puzzles.map((puzzle) => (
+                <Card key={puzzle.id} className="overflow-hidden">
                   <div className={`p-6 ${puzzle.color}`}>
                     <puzzle.icon className="w-10 h-10 mb-4" />
                     <h3 className="text-lg font-semibold">{puzzle.title}</h3>
@@ -134,7 +186,12 @@ export default function MindActivitiesSection() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full">Start Puzzle</Button>
+                    <Button 
+                      className="w-full"
+                      onClick={() => startGame(puzzle.id, puzzle.title, "puzzle", puzzle.difficulty)}
+                    >
+                      Start Puzzle
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -143,8 +200,8 @@ export default function MindActivitiesSection() {
 
           <TabsContent value="exercises" className="mt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {exercises.map((exercise, index) => (
-                <Card key={index} className="overflow-hidden">
+              {exercises.map((exercise) => (
+                <Card key={exercise.id} className="overflow-hidden">
                   <div className={`p-6 ${exercise.color}`}>
                     <exercise.icon className="w-10 h-10 mb-4" />
                     <h3 className="text-lg font-semibold">{exercise.title}</h3>
@@ -163,7 +220,12 @@ export default function MindActivitiesSection() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full">Start Exercise</Button>
+                    <Button 
+                      className="w-full"
+                      onClick={() => startGame(exercise.id, exercise.title, "exercise", exercise.difficulty)}
+                    >
+                      Start Exercise
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -172,8 +234,8 @@ export default function MindActivitiesSection() {
 
           <TabsContent value="daily" className="mt-2">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {dailyExercises.map((exercise, index) => (
-                <Card key={index} className="overflow-hidden">
+              {dailyExercises.map((exercise) => (
+                <Card key={exercise.id} className="overflow-hidden">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-3 rounded-full bg-primary/10">
@@ -199,7 +261,12 @@ export default function MindActivitiesSection() {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full">Start Daily Challenge</Button>
+                    <Button 
+                      className="w-full"
+                      onClick={() => startGame(exercise.id, exercise.title, "daily")}
+                    >
+                      Start Daily Challenge
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
