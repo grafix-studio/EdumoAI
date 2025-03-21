@@ -9,7 +9,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 export const SUPPORTED_FILE_TYPES = ['.pdf', '.txt', '.doc', '.docx'];
 
 /**
- * Extract text from PDF file using PDF.js
+ * Extract text from PDF file using PDF.js with optimized processing
  */
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
@@ -27,9 +27,23 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       toast.info(`Processing ${numPages} pages. This might take a moment...`);
     }
     
-    // Process pages in chunks to handle large documents
-    const CHUNK_SIZE = 10; // Process 10 pages at a time
+    // Process pages in larger chunks to improve performance
+    const CHUNK_SIZE = 25; // Increased from 10 to 25 pages at a time
     let fullText = '';
+    
+    // Use a lower-level approach for text extraction to improve performance
+    const processPage = async (page: any) => {
+      try {
+        const textContent = await page.getTextContent({
+          normalizeWhitespace: true, // Normalize whitespace for better text quality
+          disableCombineTextItems: false // Combine text items for better performance
+        });
+        return textContent.items.map((item: any) => item.str).join(' ');
+      } catch (err) {
+        console.error("Error extracting text from page:", err);
+        return ""; // Return empty string on error to continue processing
+      }
+    };
     
     // Process pages in chunks
     for (let i = 0; i < numPages; i += CHUNK_SIZE) {
@@ -39,11 +53,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       // Create promises for each page in the current chunk
       for (let pageNum = i + 1; pageNum <= endPage; pageNum++) {
         pagePromises.push(
-          pdfDoc.getPage(pageNum).then(async page => {
-            const textContent = await page.getTextContent();
-            // Extract text from the page
-            return textContent.items.map((item: any) => item.str).join(' ');
-          })
+          pdfDoc.getPage(pageNum).then(processPage)
         );
       }
       
@@ -53,8 +63,8 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       // Append the text from the current chunk of pages
       fullText += pageTexts.join('\n');
       
-      // Update progress for large documents
-      if (numPages > 30 && i + CHUNK_SIZE < numPages) {
+      // Update progress for large documents less frequently to reduce UI updates
+      if (numPages > 50 && i + CHUNK_SIZE < numPages && (i % 50) === 0) {
         toast.info(`Processed ${endPage} of ${numPages} pages...`);
       }
     }
@@ -102,19 +112,42 @@ export async function parseDocument(file: File): Promise<string> {
 
 /**
  * Chunk a document into smaller segments to handle large documents
+ * Optimized to create more efficient chunks
  */
 export function chunkDocument(text: string, maxChunkSize: number = 8000): string[] {
-  // Simple chunking by paragraphs
+  // More sophisticated chunking by paragraphs that respects document structure
   const paragraphs = text.split('\n').filter(p => p.trim());
   const chunks: string[] = [];
   let currentChunk = '';
   
   for (const paragraph of paragraphs) {
-    if (currentChunk.length + paragraph.length > maxChunkSize) {
+    // If adding this paragraph would exceed the max size
+    if (currentChunk.length + paragraph.length > maxChunkSize && currentChunk.length > 0) {
       chunks.push(currentChunk);
       currentChunk = paragraph;
     } else {
       currentChunk += (currentChunk ? '\n' : '') + paragraph;
+    }
+    
+    // If a paragraph is itself longer than maxChunkSize, split it
+    if (paragraph.length > maxChunkSize) {
+      const words = paragraph.split(' ');
+      let subChunk = '';
+      
+      for (const word of words) {
+        if (subChunk.length + word.length > maxChunkSize) {
+          if (subChunk) {
+            chunks.push(subChunk);
+          }
+          subChunk = word;
+        } else {
+          subChunk += (subChunk ? ' ' : '') + word;
+        }
+      }
+      
+      if (subChunk) {
+        currentChunk = subChunk;
+      }
     }
   }
   

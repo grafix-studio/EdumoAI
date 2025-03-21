@@ -30,7 +30,7 @@ export default function DocumentUploader({
 }: DocumentUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle document upload
+  // Handle document upload with optimized processing
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -51,6 +51,9 @@ export default function DocumentUploader({
       // Store the full content
       setDocumentContent(content);
       setDocumentName(file.name);
+      
+      // Show progress toast before AI processing
+      toast.info("Analyzing document content...");
       
       // Process document into sections using AI
       const sections = await processDocumentWithAI(content);
