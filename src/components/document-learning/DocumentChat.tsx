@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
-import { getOpenAIChatResponse, DocumentSection } from "../../utils/openaiService";
+import { getAIChatResponse, DocumentSection } from "../../utils/aiService";
 
 interface DocumentChatProps {
   documentContent: string | null;
@@ -21,7 +21,7 @@ export default function DocumentChat({
   const findRelevantSection = (query: string): string => {
     if (!documentSections.length) return "";
     
-    // Simple keyword matching (in a real app, this would use embeddings and semantic search)
+    // Simple keyword matching with scoring improvements
     const queryWords = query.toLowerCase().split(' ')
       .filter(word => word.length > 3) // Only consider words longer than 3 chars
       .map(word => word.replace(/[.,?!;:]/g, '')); // Remove punctuation
@@ -31,17 +31,30 @@ export default function DocumentChat({
     // Score each section based on keyword matches
     const sectionScores = documentSections.map(section => {
       const sectionContent = section.content.toLowerCase();
+      const sectionTitle = section.title.toLowerCase();
       let score = 0;
       
       queryWords.forEach(word => {
-        if (sectionContent.includes(word)) {
-          score += 1;
-          
-          // Bonus for words in the title
-          if (section.title.toLowerCase().includes(word)) {
-            score += 2;
-          }
+        // Check for exact word match
+        const wordRegex = new RegExp(`\\b${word}\\b`, 'i');
+        
+        // Title matches are most important
+        if (wordRegex.test(sectionTitle)) {
+          score += 5;
+        } else if (sectionTitle.includes(word)) {
+          score += 3;
         }
+        
+        // Content matches
+        if (wordRegex.test(sectionContent)) {
+          score += 2;
+        } else if (sectionContent.includes(word)) {
+          score += 1;
+        }
+        
+        // Bonus for frequent occurrences
+        const occurrences = (sectionContent.match(new RegExp(word, 'gi')) || []).length;
+        score += Math.min(occurrences / 5, 2); // Cap the bonus at 2 points
       });
       
       return { section, score };
@@ -49,6 +62,15 @@ export default function DocumentChat({
     
     // Sort by score and take the highest scoring section
     sectionScores.sort((a, b) => b.score - a.score);
+    
+    // If section has zero score but we have sections, return most relevant one
+    if (sectionScores[0].score === 0 && documentSections.length > 0) {
+      // Return a combined context from the first 2-3 sections (if available)
+      const numSections = Math.min(3, documentSections.length);
+      return documentSections.slice(0, numSections)
+        .map(section => `## ${section.title}\n\n${section.content}`).join('\n\n');
+    }
+    
     return sectionScores[0].section.content;
   };
 
@@ -81,8 +103,8 @@ export default function DocumentChat({
       // Find the most relevant section for the query
       const relevantSection = findRelevantSection(newMessage.content);
       
-      // Get response from OpenAI
-      const response = await getOpenAIChatResponse(
+      // Get response from AI
+      const response = await getAIChatResponse(
         newMessage.content, 
         documentContent,
         relevantSection

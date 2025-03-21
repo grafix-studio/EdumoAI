@@ -3,10 +3,11 @@ import { useRef } from "react";
 import { FileText, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { 
-  processDocumentWithOpenAI,
-  generateStudyPlanWithOpenAI,
+  processDocumentWithAI,
+  generateStudyPlanWithAI,
   DocumentSection 
-} from "../../utils/openaiService";
+} from "../../utils/aiService";
+import { parseDocument, SUPPORTED_FILE_TYPES } from "../../utils/documentParser";
 
 interface DocumentUploaderProps {
   documentName: string | null;
@@ -32,39 +33,45 @@ export default function DocumentUploader({
   // Handle document upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setIsProcessing(true);
-      toast.info(`Processing ${file.name}...`);
+    if (!file) return;
+    
+    const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+    if (!SUPPORTED_FILE_TYPES.includes(fileExtension)) {
+      toast.error(`Unsupported file type. Please upload ${SUPPORTED_FILE_TYPES.join(', ')}`);
+      return;
+    }
+    
+    setIsProcessing(true);
+    toast.info(`Processing ${file.name}...`);
+    
+    try {
+      // Parse the document content
+      const content = await parseDocument(file);
       
-      // Use FileReader to read the file content
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const content = event.target?.result as string;
-        
-        // Store the full content
-        setDocumentContent(content);
-        setDocumentName(file.name);
-        
-        try {
-          // Process document into sections using OpenAI
-          const sections = await processDocumentWithOpenAI(content);
-          setDocumentSections(sections);
-          console.log("Processed document sections:", sections);
-          
-          // Generate study plan based on sections
-          const plan = await generateStudyPlanWithOpenAI(sections);
-          setStudyPlan(plan);
-          
-          setIsProcessing(false);
-          toast.success(`Document "${file.name}" processed successfully`);
-        } catch (error) {
-          console.error("Error during document processing:", error);
-          setIsProcessing(false);
-          toast.error("Failed to process document. Please try again.");
-        }
-      };
+      // Store the full content
+      setDocumentContent(content);
+      setDocumentName(file.name);
       
-      reader.readAsText(file);
+      // Process document into sections using AI
+      const sections = await processDocumentWithAI(content);
+      setDocumentSections(sections);
+      console.log("Processed document sections:", sections);
+      
+      // Generate study plan based on sections
+      const plan = await generateStudyPlanWithAI(sections);
+      setStudyPlan(plan);
+      
+      setIsProcessing(false);
+      toast.success(`Document "${file.name}" processed successfully`);
+    } catch (error) {
+      console.error("Error during document processing:", error);
+      setIsProcessing(false);
+      toast.error(`Failed to process document: ${error instanceof Error ? error.message : "Unknown error"}`);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -86,7 +93,7 @@ export default function DocumentUploader({
         <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
         <h3 className="text-xl font-medium mb-2">Upload Learning Material</h3>
         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-          Upload a PDF, Word document, or text file to get started. Our AI will analyze the content
+          Upload a PDF or text file to get started. Our AI will analyze the content
           and help you learn effectively.
         </p>
         
@@ -94,7 +101,7 @@ export default function DocumentUploader({
           type="file" 
           ref={fileInputRef}
           className="hidden" 
-          accept=".pdf,.doc,.docx,.txt"
+          accept=".pdf,.txt"
           onChange={handleFileUpload}
         />
         
