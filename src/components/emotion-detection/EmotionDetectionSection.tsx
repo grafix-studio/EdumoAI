@@ -46,7 +46,7 @@ export default function EmotionDetectionSection() {
       </div>
       
       <div className="max-w-6xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Camera Feed & Controls */}
           <CameraFeed 
             isAnalyzing={isAnalyzing}

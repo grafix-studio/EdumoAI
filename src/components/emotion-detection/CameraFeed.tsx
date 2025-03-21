@@ -24,7 +24,7 @@ export default function CameraFeed({
   canvasRef
 }: CameraFeedProps) {
   return (
-    <div className="glass-card p-6 flex flex-col">
+    <div className="glass-card p-6 flex flex-col h-full">
       <div className="relative aspect-video bg-black/10 dark:bg-white/5 rounded-lg overflow-hidden mb-4">
         <video 
           ref={videoRef} 
@@ -64,12 +64,12 @@ export default function CameraFeed({
         </div>
       </div>
       
-      <div className="mt-auto flex justify-center">
+      <div className="mt-auto">
         {!isAnalyzing ? (
           <Button 
             variant="default"
             onClick={startAnalysis}
-            className="flex items-center space-x-2"
+            className="w-full flex items-center justify-center space-x-2"
           >
             <Play className="w-4 h-4" />
             <span>Start Detection</span>
@@ -78,7 +78,7 @@ export default function CameraFeed({
           <Button 
             variant="secondary"
             onClick={stopAnalysis}
-            className="flex items-center space-x-2"
+            className="w-full flex items-center justify-center space-x-2"
           >
             <X className="w-4 h-4" />
             <span>Stop Detection</span>
