@@ -23,12 +23,15 @@ export default function EmotionDetectionSection() {
   const [focusLevel, setFocusLevel] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<string>("trends");
   const [lastDetectionTime, setLastDetectionTime] = useState<number>(0);
+  const [showEmotionPopup, setShowEmotionPopup] = useState<boolean>(false);
+  const [popupEmotion, setPopupEmotion] = useState<string | null>(null);
 
   // Face detection interval ref
   const faceDetectionIntervalRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const popupTimeoutRef = useRef<number | null>(null);
 
   // Request camera permission
   const requestCameraPermission = async () => {
@@ -98,9 +101,9 @@ export default function EmotionDetectionSection() {
   const processVideoFrame = async () => {
     if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
     
-    // Only run detection every 2 seconds to avoid API rate limits
+    // Only run detection every 1 second to update results faster while still respecting API limits
     const now = Date.now();
-    if (now - lastDetectionTime < 2000) return;
+    if (now - lastDetectionTime < 1000) return;
     
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
@@ -117,60 +120,90 @@ export default function EmotionDetectionSection() {
       // Call Kairos API for emotion detection
       const emotionResult = await detectEmotion(imageData);
       
-      // Update emotion state
-      if (emotionResult.emotion !== currentEmotion) {
-        setCurrentEmotion(emotionResult.emotion);
-        
-        // Update emotion history
-        setEmotionHistory(prev => [...prev, {
-          emotion: emotionResult.emotion,
-          timestamp: Date.now(),
-          score: emotionResult.confidence
-        }].slice(-12)); // Keep last 12 emotions
-        
-        // Update stress level based on emotion
-        updateMetricsBasedOnEmotion(emotionResult.emotion);
+      // Update emotion state immediately to reflect changes
+      setCurrentEmotion(emotionResult.emotion);
+      
+      // Update emotion history
+      setEmotionHistory(prev => [...prev, {
+        emotion: emotionResult.emotion,
+        timestamp: Date.now(),
+        score: emotionResult.confidence
+      }].slice(-12)); // Keep last 12 emotions
+      
+      // Update metrics based on emotion immediately
+      updateMetricsBasedOnEmotion(emotionResult.emotion);
+      
+      // Show popup for stress or sad emotions
+      if (emotionResult.emotion === "stressed" || emotionResult.emotion === "sad") {
+        showEmotionalSupportPopup(emotionResult.emotion);
       }
     } catch (error) {
       console.error("Error detecting emotion:", error);
     }
   };
 
-  // Update metrics based on detected emotion
+  // Show popup for emotional support when stress or sadness is detected
+  const showEmotionalSupportPopup = (emotion: string) => {
+    // Clear any existing popup timeout
+    if (popupTimeoutRef.current !== null) {
+      window.clearTimeout(popupTimeoutRef.current);
+    }
+    
+    setPopupEmotion(emotion);
+    setShowEmotionPopup(true);
+    
+    // Auto-hide popup after 8 seconds
+    popupTimeoutRef.current = window.setTimeout(() => {
+      setShowEmotionPopup(false);
+      popupTimeoutRef.current = null;
+    }, 8000);
+  };
+
+  // Update metrics based on detected emotion - more dynamic range for better visualization
   const updateMetricsBasedOnEmotion = (emotion: string) => {
-    // Update stress level based on emotion
+    // Update stress level based on emotion - more dramatic changes
     if (emotion === "stressed") {
       setStressLevel(75 + Math.floor(Math.random() * 25));
     } else if (emotion === "confused") {
       setStressLevel(50 + Math.floor(Math.random() * 25));
     } else if (emotion === "sad") {
-      setStressLevel(40 + Math.floor(Math.random() * 30));
+      setStressLevel(60 + Math.floor(Math.random() * 20));
     } else if (emotion === "neutral") {
       setStressLevel(20 + Math.floor(Math.random() * 20));
     } else if (emotion === "focused") {
       setStressLevel(10 + Math.floor(Math.random() * 15));
-    } else {
+    } else if (emotion === "happy") {
       setStressLevel(5 + Math.floor(Math.random() * 10));
+    } else {
+      setStressLevel(15 + Math.floor(Math.random() * 20));
     }
     
-    // Update engagement level
+    // Update engagement level - more dramatic changes
     if (emotion === "focused" || emotion === "happy") {
       setEngagementLevel(80 + Math.floor(Math.random() * 20));
     } else if (emotion === "neutral") {
       setEngagementLevel(50 + Math.floor(Math.random() * 30));
+    } else if (emotion === "sad") {
+      setEngagementLevel(20 + Math.floor(Math.random() * 30));
+    } else if (emotion === "stressed") {
+      setEngagementLevel(15 + Math.floor(Math.random() * 25));
     } else {
       setEngagementLevel(30 + Math.floor(Math.random() * 40));
     }
     
-    // Update focus level
+    // Update focus level - more dramatic changes
     if (emotion === "focused") {
       setFocusLevel(85 + Math.floor(Math.random() * 15));
     } else if (emotion === "happy") {
       setFocusLevel(70 + Math.floor(Math.random() * 20));
     } else if (emotion === "neutral") {
       setFocusLevel(50 + Math.floor(Math.random() * 20));
+    } else if (emotion === "stressed") {
+      setFocusLevel(15 + Math.floor(Math.random() * 20));
+    } else if (emotion === "sad") {
+      setFocusLevel(20 + Math.floor(Math.random() * 20));
     } else {
-      setFocusLevel(20 + Math.floor(Math.random() * 30));
+      setFocusLevel(30 + Math.floor(Math.random() * 30));
     }
   };
 
@@ -207,14 +240,12 @@ export default function EmotionDetectionSection() {
           timestamp: Date.now(),
           score: 0.8
         }]);
-        setStressLevel(25);
-        setEngagementLevel(60);
-        setFocusLevel(55);
+        updateMetricsBasedOnEmotion("neutral");
       }
       
-      // Set up frame processing interval (3fps is enough for emotion detection)
+      // Set up frame processing interval (increased rate for more responsive updates)
       if (faceDetectionIntervalRef.current === null) {
-        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 333);
+        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 250);
       }
     } else {
       toast.error("Both camera and microphone access are required for emotion detection");
@@ -257,6 +288,10 @@ export default function EmotionDetectionSection() {
       
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      if (popupTimeoutRef.current !== null) {
+        window.clearTimeout(popupTimeoutRef.current);
       }
     };
   }, []);
@@ -386,6 +421,41 @@ export default function EmotionDetectionSection() {
 
   return (
     <section id="home" className="section">
+      {showEmotionPopup && popupEmotion && (
+        <div className={`emotion-popup ${popupEmotion === "stressed" ? "emotion-popup-stressed" : "emotion-popup-sad"}`}>
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center gap-2">
+              {popupEmotion === "stressed" ? 
+                <HeartCrack className="w-5 h-5 text-destructive" /> : 
+                <Frown className="w-5 h-5 text-warning" />
+              }
+              <h4 className="font-semibold text-lg">
+                {popupEmotion === "stressed" ? "Stress Detected" : "You seem a bit down"}
+              </h4>
+            </div>
+            <button 
+              onClick={() => setShowEmotionPopup(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-sm mb-3">
+            {popupEmotion === "stressed" 
+              ? "Taking a short break can help reduce stress levels and improve learning outcomes." 
+              : "A change of pace might help improve your mood and engagement."}
+          </p>
+          <div className="text-sm font-medium flex items-center gap-2 text-primary">
+            <Heart className="w-4 h-4" />
+            <span>
+              {popupEmotion === "stressed" 
+                ? "Try a 2-minute breathing exercise" 
+                : "Consider a quick positive visualization"}
+            </span>
+          </div>
+        </div>
+      )}
+      
       <div className="section-header">
         <span className="chip mb-2">AI-Powered</span>
         <h1 className="text-balance">Real-time Emotion Detection</h1>

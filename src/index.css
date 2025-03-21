@@ -181,6 +181,21 @@
   .theme-toggle {
     @apply p-2 rounded-full text-foreground/80 hover:text-foreground hover:bg-secondary/50 transition-all duration-300 ease-apple;
   }
+  
+  /* Emotion popup styles */
+  .emotion-popup {
+    @apply fixed top-4 right-4 p-4 rounded-xl shadow-elevated z-50 max-w-sm animate-fade-in;
+    background-color: #ffffff;
+    border-left: 4px solid #ea384c;
+  }
+  
+  .emotion-popup-stressed {
+    border-color: #ea384c;
+  }
+  
+  .emotion-popup-sad {
+    border-color: #f59e0b;
+  }
 }
 
 @layer utilities {
