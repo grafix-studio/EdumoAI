@@ -161,8 +161,8 @@ export default {
 				'float': 'float 5s ease-in-out infinite'
 			},
 			fontFamily: {
-				sans: ['Inter var', 'Inter', 'sans-serif'],
-				display: ['SF Pro Display', 'Inter', 'sans-serif']
+				sans: ['Poppins', 'sans-serif'],
+				display: ['Poppins', 'sans-serif']
 			},
 			boxShadow: {
 				'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
