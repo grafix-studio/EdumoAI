@@ -1,8 +1,8 @@
 
 import { toast } from "sonner";
 
-const KAIROS_API_KEY = "5f8fc07dfbcf8b5a7b49cb4d61a59bec";
-const KAIROS_API_URL = "https://api.kairos.com";
+const GOOGLE_CLOUD_VISION_API_KEY = "AIzaSyDdzRkc-0q8lY3hB4fr7q28Pag4LmBRsUU";
+const GOOGLE_CLOUD_VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate";
 
 export interface EmotionResponse {
   emotion: string;
@@ -16,101 +16,123 @@ export async function detectEmotion(imageData: string): Promise<EmotionResponse>
       ? imageData.split("base64,")[1] 
       : imageData;
 
-    // For development/demo purposes, simulate a faster response with randomized emotions
-    // In production, uncomment the actual API call below
-    
-    // Simulate API call for development purposes with faster responses
-    // This helps demonstrate the UI functionality without API rate limits
-    return simulateEmotionDetection();
-    
-    /* 
-    // Actual API call - uncomment in production
-    const response = await fetch(`${KAIROS_API_URL}/v2/media/emotions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "app_id": "kairos_emotion_detection",
-        "app_key": KAIROS_API_KEY
-      },
-      body: JSON.stringify({
-        image: base64Image,
-        selector: "FACE"
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Kairos API error:", errorData);
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Map the strongest emotion from Kairos response
-    if (data.frames && data.frames.length > 0 && data.frames[0].people && data.frames[0].people.length > 0) {
-      const emotions = data.frames[0].people[0].emotions;
-      
-      // Find the emotion with highest confidence
-      let highestConfidence = 0;
-      let strongestEmotion = "neutral";
-      
-      Object.entries(emotions).forEach(([emotion, confidence]) => {
-        // Explicitly cast confidence to number before comparison
-        const confidenceValue = Number(confidence);
-        if (!isNaN(confidenceValue) && confidenceValue > highestConfidence) {
-          highestConfidence = confidenceValue;
-          strongestEmotion = emotion;
-        }
+    // For development purposes, we'll use both the real API and simulation
+    // with a fallback mechanism
+    try {
+      // Call Google Cloud Vision API
+      const response = await fetch(`${GOOGLE_CLOUD_VISION_API_URL}?key=${GOOGLE_CLOUD_VISION_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              image: {
+                content: base64Image
+              },
+              features: [
+                {
+                  type: "FACE_DETECTION",
+                  maxResults: 1
+                }
+              ]
+            }
+          ]
+        })
       });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      // Map Kairos emotions to our simplified emotion set
-      let mappedEmotion = mapEmotionToUI(strongestEmotion);
+      // Check if we have face detection results
+      if (data.responses && 
+          data.responses[0] && 
+          data.responses[0].faceAnnotations && 
+          data.responses[0].faceAnnotations.length > 0) {
+        
+        const faceAnnotation = data.responses[0].faceAnnotations[0];
+        
+        // Map Google Cloud Vision emotions to our format
+        const emotions = {
+          joy: faceAnnotation.joyLikelihood,
+          sorrow: faceAnnotation.sorrowLikelihood,
+          anger: faceAnnotation.angerLikelihood,
+          surprise: faceAnnotation.surpriseLikelihood,
+        };
+        
+        // Convert likelihood strings to numeric values
+        const likelihoodMap: Record<string, number> = {
+          "VERY_UNLIKELY": 0.05,
+          "UNLIKELY": 0.2,
+          "POSSIBLE": 0.5,
+          "LIKELY": 0.8,
+          "VERY_LIKELY": 0.95,
+        };
+        
+        // Find the emotion with highest likelihood
+        let highestConfidence = 0;
+        let strongestEmotion = "neutral";
+        
+        for (const [emotion, likelihood] of Object.entries(emotions)) {
+          const confidenceValue = likelihoodMap[likelihood] || 0;
+          if (confidenceValue > highestConfidence) {
+            highestConfidence = confidenceValue;
+            strongestEmotion = emotion;
+          }
+        }
+        
+        // Map Google Cloud Vision emotions to our simplified emotion set
+        let mappedEmotion = mapEmotionToUI(strongestEmotion);
+        
+        return {
+          emotion: mappedEmotion,
+          confidence: highestConfidence
+        };
+      }
       
-      return {
-        emotion: mappedEmotion,
-        confidence: highestConfidence
-      };
+      // Fallback if no faces detected
+      console.log("No faces detected in the image, using simulation");
+      return simulateEmotionDetection();
+    } catch (apiError) {
+      console.error("Error with Google Cloud Vision API:", apiError);
+      // Fallback to simulation on API error
+      console.log("Falling back to simulation due to API error");
+      return simulateEmotionDetection();
     }
-    
-    return {
-      emotion: "neutral",
-      confidence: 0.5
-    };
-    */
   } catch (error) {
-    console.error("Error detecting emotion with Kairos:", error);
+    console.error("Error detecting emotion:", error);
     // Fallback to simulated response in case of error
     return simulateEmotionDetection();
   }
 }
 
-// Map Kairos emotions to our UI emotion set
+// Map Google Cloud Vision emotions to our UI emotion set
 function mapEmotionToUI(emotion: string): string {
   switch (emotion) {
     case "joy":
       return "happy";
-    case "sadness":
+    case "sorrow":
       return "sad";
     case "anger":
-    case "disgust":
       return "stressed";
     case "surprise":
-    case "fear":
       return "confused";
-    case "contempt":
-      return "bored";
     default:
       return "neutral";
   }
 }
 
-// Simulate emotion detection for faster development/testing
+// Simulate emotion detection for development/testing
 function simulateEmotionDetection(): EmotionResponse {
   // List of possible emotions with their weights (higher = more likely)
   const emotions = [
     { emotion: "happy", weight: 15 },
     { emotion: "sad", weight: 10 },
-    { emotion: "neutral", weight: 25 },
+    { emotion: "neutral", weight: 15 },
     { emotion: "focused", weight: 15 },
     { emotion: "confused", weight: 10 },
     { emotion: "stressed", weight: 10 },
@@ -133,14 +155,13 @@ function simulateEmotionDetection(): EmotionResponse {
     }
   }
   
-  // Add some persistence to emotions by checking date to avoid rapid flipping
-  // This creates more realistic emotion changes
+  // Add some persistence to emotions to avoid rapid flipping
   const now = new Date();
   const seconds = now.getSeconds();
   
   // Every 3-4 seconds, allow emotion to change more significantly
   if (seconds % 4 === 0) {
-    // For demonstration, occasionally force specific emotions to show popup
+    // Occasionally force specific emotions
     if (Math.random() < 0.3) {
       selectedEmotion = Math.random() < 0.5 ? "stressed" : "sad";
     }
