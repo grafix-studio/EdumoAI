@@ -22,6 +22,7 @@ export default function EmotionDetectionSection() {
     showEmotionPopup,
     setShowEmotionPopup,
     popupEmotion,
+    timerCount,
     videoRef,
     canvasRef,
     startAnalysis,
@@ -52,6 +53,7 @@ export default function EmotionDetectionSection() {
             isAnalyzing={isAnalyzing}
             cameraPermission={cameraPermission}
             micPermission={micPermission}
+            timerCount={timerCount}
             startAnalysis={startAnalysis}
             stopAnalysis={stopAnalysis}
             videoRef={videoRef}

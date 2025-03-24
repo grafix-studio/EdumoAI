@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Camera, Play, X, Loader2 } from "lucide-react";
+import { Camera, Play, X, Loader2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -8,6 +8,7 @@ interface CameraFeedProps {
   isAnalyzing: boolean;
   cameraPermission: boolean | null;
   micPermission: boolean | null;
+  timerCount?: number;
   startAnalysis: () => Promise<void>;
   stopAnalysis: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -18,6 +19,7 @@ export default function CameraFeed({
   isAnalyzing,
   cameraPermission,
   micPermission,
+  timerCount = 30,
   startAnalysis,
   stopAnalysis,
   videoRef,
@@ -55,8 +57,9 @@ export default function CameraFeed({
         )}
         
         {isAnalyzing && (
-          <div className="absolute bottom-2 right-2 bg-primary/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium">
-            Live Analysis
+          <div className="absolute bottom-2 right-2 bg-primary/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            <span>{timerCount}s</span>
           </div>
         )}
       </div>

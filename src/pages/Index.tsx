@@ -2,7 +2,7 @@
 import { lazy, Suspense, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { Loader2 } from "lucide-react";
+import { Loader2, Smile, BookOpen, CheckSquare } from "lucide-react";
 import DocumentLearningSection from "../components/DocumentLearningSection";
 import { Button } from "@/components/ui/button";
 
@@ -54,6 +54,7 @@ export default function Index() {
                 className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
                 onClick={() => scrollToSection("home")}
               >
+                <Smile className="h-6 w-6" />
                 <span className="text-xl font-bold">Emotion Detection</span>
                 <span className="text-sm font-normal">Adapt learning to your emotional state</span>
               </Button>
@@ -61,6 +62,7 @@ export default function Index() {
                 className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
                 onClick={() => scrollToSection("documents")}
               >
+                <BookOpen className="h-6 w-6" />
                 <span className="text-xl font-bold">Learning Assistant</span>
                 <span className="text-sm font-normal">AI-powered document analysis</span>
               </Button>
@@ -68,6 +70,7 @@ export default function Index() {
                 className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
                 onClick={() => scrollToSection("tasks")}
               >
+                <CheckSquare className="h-6 w-6" />
                 <span className="text-xl font-bold">Task Manager</span>
                 <span className="text-sm font-normal">Organize your learning journey</span>
               </Button>
