@@ -49,27 +49,27 @@ export default function Index() {
                 Start by exploring our key features below!
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
               <Button 
-                className="btn-primary text-base flex items-center gap-2"
+                className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
                 onClick={() => scrollToSection("home")}
               >
-                <span className="text-xl mr-2">🧠</span>
-                Emotion Detection
+                <span className="text-xl font-bold">Emotion Detection</span>
+                <span className="text-sm font-normal">Adapt learning to your emotional state</span>
               </Button>
               <Button 
-                className="btn-primary text-base flex items-center gap-2"
+                className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
                 onClick={() => scrollToSection("documents")}
               >
-                <span className="text-xl mr-2">📚</span>
-                Learning Assistant
+                <span className="text-xl font-bold">Learning Assistant</span>
+                <span className="text-sm font-normal">AI-powered document analysis</span>
               </Button>
               <Button 
-                className="btn-primary text-base flex items-center gap-2"
+                className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
                 onClick={() => scrollToSection("tasks")}
               >
-                <span className="text-xl mr-2">✅</span>
-                Task Manager
+                <span className="text-xl font-bold">Task Manager</span>
+                <span className="text-sm font-normal">Organize your learning journey</span>
               </Button>
             </div>
           </div>

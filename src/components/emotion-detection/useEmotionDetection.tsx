@@ -92,9 +92,9 @@ export default function useEmotionDetection() {
   const processVideoFrame = async () => {
     if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
     
-    // Only run detection every 1 second to update results faster while still respecting API limits
+    // Only run detection every 30 seconds to reduce API calls
     const now = Date.now();
-    if (now - lastDetectionTime < 1000) return;
+    if (now - lastDetectionTime < 30000) return;
     
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
@@ -108,8 +108,13 @@ export default function useEmotionDetection() {
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
       setLastDetectionTime(now);
       
+      console.log("Detecting emotion...");
+      toast.info("Analyzing your emotional state...");
+      
       // Call Kairos API for emotion detection
       const emotionResult = await detectEmotion(imageData);
+      
+      console.log("Emotion detected:", emotionResult);
       
       // Update emotion state immediately to reflect changes
       setCurrentEmotion(emotionResult.emotion);
@@ -128,8 +133,11 @@ export default function useEmotionDetection() {
       if (emotionResult.emotion === "stressed" || emotionResult.emotion === "sad") {
         showEmotionalSupportPopup(emotionResult.emotion);
       }
+      
+      toast.success(`Emotion detected: ${emotionResult.emotion}`);
     } catch (error) {
       console.error("Error detecting emotion:", error);
+      toast.error("Error analyzing emotion. Trying again in 30 seconds.");
     }
   };
 
@@ -234,9 +242,12 @@ export default function useEmotionDetection() {
         updateMetricsBasedOnEmotion("neutral");
       }
       
-      // Set up frame processing interval (increased rate for more responsive updates)
+      // Process immediately on start
+      setTimeout(() => processVideoFrame(), 1000);
+      
+      // Set up frame processing interval (every 30 seconds)
       if (faceDetectionIntervalRef.current === null) {
-        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 250);
+        faceDetectionIntervalRef.current = window.setInterval(processVideoFrame, 30000);
       }
     } else {
       toast.error("Both camera and microphone access are required for emotion detection");
