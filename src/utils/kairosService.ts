@@ -1,8 +1,10 @@
 
 import { toast } from "sonner";
 
-const GOOGLE_CLOUD_VISION_API_KEY = "AIzaSyDdzRkc-0q8lY3hB4fr7q28Pag4LmBRsUU";
-const GOOGLE_CLOUD_VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate";
+// Face++ API credentials
+const FACE_PLUS_PLUS_API_KEY = "KAA-QhU_WvIrvIw-MZdGjI7PE0Q-quJg";
+const FACE_PLUS_PLUS_API_SECRET = "jcepSPpQNeGkxXL_HYiGU2NXxXFX647w";
+const FACE_PLUS_PLUS_API_URL = "https://api-us.faceplusplus.com/facepp/v3/detect";
 
 export interface EmotionResponse {
   emotion: string;
@@ -15,82 +17,64 @@ export async function detectEmotion(imageData: string): Promise<EmotionResponse>
     const base64Image = imageData.includes("base64,") 
       ? imageData.split("base64,")[1] 
       : imageData;
-
-    // For development purposes, we'll use both the real API and simulation
-    // with a fallback mechanism
+    
     try {
-      // Call Google Cloud Vision API
-      const response = await fetch(`${GOOGLE_CLOUD_VISION_API_URL}?key=${GOOGLE_CLOUD_VISION_API_KEY}`, {
+      // Create form data for Face++ API
+      const formData = new FormData();
+      formData.append("api_key", FACE_PLUS_PLUS_API_KEY);
+      formData.append("api_secret", FACE_PLUS_PLUS_API_SECRET);
+      formData.append("return_attributes", "emotion");
+      
+      // Convert base64 to blob for the API
+      const byteCharacters = atob(base64Image);
+      const byteArrays = [];
+      for (let i = 0; i < byteCharacters.length; i += 512) {
+        const slice = byteCharacters.slice(i, i + 512);
+        const byteNumbers = new Array(slice.length);
+        for (let j = 0; j < slice.length; j++) {
+          byteNumbers[j] = slice.charCodeAt(j);
+        }
+        byteArrays.push(new Uint8Array(byteNumbers));
+      }
+      const blob = new Blob(byteArrays, { type: 'image/jpeg' });
+      formData.append("image_file", blob, "image.jpg");
+
+      // Call Face++ API
+      console.log("Calling Face++ API...");
+      const response = await fetch(FACE_PLUS_PLUS_API_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: {
-                content: base64Image
-              },
-              features: [
-                {
-                  type: "FACE_DETECTION",
-                  maxResults: 1
-                }
-              ]
-            }
-          ]
-        })
+        body: formData
       });
 
       if (!response.ok) {
+        console.error("Face++ API error:", response.status);
         throw new Error(`API error: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("Face++ API response:", data);
       
       // Check if we have face detection results
-      if (data.responses && 
-          data.responses[0] && 
-          data.responses[0].faceAnnotations && 
-          data.responses[0].faceAnnotations.length > 0) {
+      if (data.faces && data.faces.length > 0) {
+        const faceEmotions = data.faces[0].attributes.emotion;
         
-        const faceAnnotation = data.responses[0].faceAnnotations[0];
-        
-        // Map Google Cloud Vision emotions to our format
-        const emotions = {
-          joy: faceAnnotation.joyLikelihood,
-          sorrow: faceAnnotation.sorrowLikelihood,
-          anger: faceAnnotation.angerLikelihood,
-          surprise: faceAnnotation.surpriseLikelihood,
-        };
-        
-        // Convert likelihood strings to numeric values
-        const likelihoodMap: Record<string, number> = {
-          "VERY_UNLIKELY": 0.05,
-          "UNLIKELY": 0.2,
-          "POSSIBLE": 0.5,
-          "LIKELY": 0.8,
-          "VERY_LIKELY": 0.95,
-        };
-        
-        // Find the emotion with highest likelihood
+        // Find the emotion with highest confidence
         let highestConfidence = 0;
         let strongestEmotion = "neutral";
         
-        for (const [emotion, likelihood] of Object.entries(emotions)) {
-          const confidenceValue = likelihoodMap[likelihood] || 0;
-          if (confidenceValue > highestConfidence) {
-            highestConfidence = confidenceValue;
-            strongestEmotion = emotion;
+        for (const [emotion, confidence] of Object.entries(faceEmotions)) {
+          if (Number(confidence) > highestConfidence) {
+            highestConfidence = Number(confidence);
+            strongestEmotion = emotion.toLowerCase();
           }
         }
         
-        // Map Google Cloud Vision emotions to our simplified emotion set
+        // Map Face++ emotions to our simplified emotion set
         let mappedEmotion = mapEmotionToUI(strongestEmotion);
         
         return {
           emotion: mappedEmotion,
-          confidence: highestConfidence
+          confidence: highestConfidence / 100 // Convert to 0-1 scale
         };
       }
       
@@ -98,7 +82,7 @@ export async function detectEmotion(imageData: string): Promise<EmotionResponse>
       console.log("No faces detected in the image, using simulation");
       return simulateEmotionDetection();
     } catch (apiError) {
-      console.error("Error with Google Cloud Vision API:", apiError);
+      console.error("Error with Face++ API:", apiError);
       // Fallback to simulation on API error
       console.log("Falling back to simulation due to API error");
       return simulateEmotionDetection();
@@ -110,17 +94,22 @@ export async function detectEmotion(imageData: string): Promise<EmotionResponse>
   }
 }
 
-// Map Google Cloud Vision emotions to our UI emotion set
+// Map Face++ emotions to our UI emotion set
 function mapEmotionToUI(emotion: string): string {
   switch (emotion) {
-    case "joy":
+    case "happiness":
       return "happy";
-    case "sorrow":
+    case "sadness":
       return "sad";
     case "anger":
       return "stressed";
+    case "disgust":
+      return "stressed";
+    case "fear":
+      return "stressed";
     case "surprise":
       return "confused";
+    case "neutral":
     default:
       return "neutral";
   }
