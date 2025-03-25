@@ -19,7 +19,7 @@ export default function CameraFeed({
   isAnalyzing,
   cameraPermission,
   micPermission,
-  timerCount = 15,
+  timerCount = 30,
   startAnalysis,
   stopAnalysis,
   videoRef,
@@ -57,8 +57,8 @@ export default function CameraFeed({
         )}
         
         {isAnalyzing && (
-          <div className="absolute bottom-2 right-2 bg-primary/80 text-primary-foreground backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
-            <Clock className="w-3 h-3 animate-pulse" />
+          <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
+            <Clock className="w-3 h-3" />
             <span>Next update: {timerCount}s</span>
           </div>
         )}
