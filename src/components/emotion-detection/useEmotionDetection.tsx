@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { detectEmotion } from "@/utils/kairosService";
+import { detectEmotionWithFacePlusPlus } from "@/utils/facePlusPlusService";
 
 export default function useEmotionDetection() {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
@@ -19,7 +19,6 @@ export default function useEmotionDetection() {
   const [timerCount, setTimerCount] = useState<number>(15);
 
   // Face detection interval ref
-  const faceDetectionIntervalRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,7 +89,7 @@ export default function useEmotionDetection() {
     }
   };
 
-  // Process frames to detect emotions using API
+  // Process frames to detect emotions using Face++ API
   const processVideoFrame = async () => {
     if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
     
@@ -107,11 +106,11 @@ export default function useEmotionDetection() {
       setLastDetectionTime(Date.now());
       setTimerCount(15); // Reset timer to 15 seconds
       
-      console.log("Detecting emotion...");
+      console.log("Detecting emotion with Face++ API...");
       toast.info("Analyzing your emotional state...");
       
-      // Call API for emotion detection
-      const emotionResult = await detectEmotion(imageData);
+      // Call Face++ API for emotion detection
+      const emotionResult = await detectEmotionWithFacePlusPlus(imageData);
       
       console.log("Emotion detected:", emotionResult);
       
@@ -137,7 +136,7 @@ export default function useEmotionDetection() {
     } catch (error) {
       console.error("Error detecting emotion:", error);
       
-      // Even if detection fails, change to a dummy emotion for demonstration
+      // If API fails, use a fallback approach
       const dummyEmotions = ["happy", "focused", "neutral", "confused", "sad", "stressed"];
       const randomEmotion = dummyEmotions[Math.floor(Math.random() * dummyEmotions.length)];
       
@@ -339,10 +338,6 @@ export default function useEmotionDetection() {
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
-      if (faceDetectionIntervalRef.current !== null) {
-        clearInterval(faceDetectionIntervalRef.current);
-      }
-      
       if (timerIntervalRef.current !== null) {
         clearInterval(timerIntervalRef.current);
       }

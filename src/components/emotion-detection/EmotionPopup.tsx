@@ -15,7 +15,9 @@ export default function EmotionPopup({
   if (!showEmotionPopup || !popupEmotion) return null;
   
   return (
-    <div className={`emotion-popup ${popupEmotion === "stressed" ? "emotion-popup-stressed" : "emotion-popup-sad"}`}>
+    <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg w-80 
+                    ${popupEmotion === "stressed" ? "bg-destructive/10 border border-destructive/30" : 
+                      "bg-warning/10 border border-warning/30"}`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           {popupEmotion === "stressed" ? 
