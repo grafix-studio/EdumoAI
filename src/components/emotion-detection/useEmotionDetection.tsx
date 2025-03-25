@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { detectEmotionWithFacePlusPlus } from "@/utils/facePlusPlusService";
+import { detectEmotion } from "@/utils/emotionDetectionService";
 
 export default function useEmotionDetection() {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
@@ -12,13 +12,12 @@ export default function useEmotionDetection() {
   const [stressLevel, setStressLevel] = useState<number>(0);
   const [engagementLevel, setEngagementLevel] = useState<number>(0);
   const [focusLevel, setFocusLevel] = useState<number>(0);
-  const [lastDetectionTime, setLastDetectionTime] = useState<number>(0);
   const [showEmotionPopup, setShowEmotionPopup] = useState<boolean>(false);
   const [popupEmotion, setPopupEmotion] = useState<string | null>(null);
   const [timerCount, setTimerCount] = useState<number>(15);
   const [previousEmotion, setPreviousEmotion] = useState<string | null>(null);
 
-  // Face detection interval ref
+  // References
   const timerIntervalRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,32 +93,33 @@ export default function useEmotionDetection() {
     }
   };
 
-  // Process frames to detect emotions using Face++ API
+  // Process frames to detect emotions
   const processVideoFrame = async () => {
     if (!videoRef.current || !canvasRef.current || !isAnalyzing || detectionInProgressRef.current) return;
     
     detectionInProgressRef.current = true;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    if (!context) {
-      detectionInProgressRef.current = false;
-      return;
-    }
     
     try {
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (!context) {
+        detectionInProgressRef.current = false;
+        return;
+      }
+      
       // Draw the current video frame onto the canvas
       context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       
       // Convert canvas to base64 image
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      setLastDetectionTime(Date.now());
-      setTimerCount(15); // Reset timer to 15 seconds
       
-      console.log("Detecting emotion with Face++ API...");
+      // Reset timer to 15 seconds
+      setTimerCount(15);
       
-      // Call Face++ API for emotion detection
-      const emotionResult = await detectEmotionWithFacePlusPlus(imageData);
+      console.log("Detecting emotion...");
       
+      // Call API for emotion detection
+      const emotionResult = await detectEmotion(imageData);
       console.log("Emotion detected:", emotionResult);
       
       // Store previous emotion for comparison
@@ -147,27 +147,7 @@ export default function useEmotionDetection() {
       
       console.log(`Emotion updated to: ${emotionResult.emotion}`);
     } catch (error) {
-      console.error("Error detecting emotion:", error);
-      
-      // If API fails, use a fallback approach with simulated data
-      const dummyEmotions = ["happy", "focused", "neutral", "confused", "sad", "stressed"];
-      const randomEmotion = dummyEmotions[Math.floor(Math.random() * dummyEmotions.length)];
-      
-      setPreviousEmotion(currentEmotion);
-      setCurrentEmotion(randomEmotion);
-      setEmotionHistory(prev => [...prev, {
-        emotion: randomEmotion,
-        timestamp: Date.now(),
-        score: 0.7 + Math.random() * 0.3
-      }].slice(-12));
-      
-      updateMetricsBasedOnEmotion(randomEmotion);
-      
-      if (randomEmotion === "stressed" || randomEmotion === "sad") {
-        showEmotionalSupportPopup(randomEmotion);
-      }
-      
-      console.log(`Using simulated emotion: ${randomEmotion}`);
+      console.error("Error processing video frame:", error);
     } finally {
       detectionInProgressRef.current = false;
     }
