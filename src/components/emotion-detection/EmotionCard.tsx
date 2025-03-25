@@ -56,6 +56,21 @@ export default function EmotionCard({
     }
   };
 
+  // Get progress bar color based on value
+  const getProgressColor = (value: number, isStress: boolean = false) => {
+    if (isStress) {
+      // For stress, higher is worse
+      return value > 70 ? "bg-destructive" : 
+             value > 40 ? "bg-warning" : 
+             "bg-success";
+    } else {
+      // For engagement and focus, higher is better
+      return value > 70 ? "bg-success" : 
+             value > 40 ? "bg-primary" : 
+             "bg-warning";
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -77,19 +92,19 @@ export default function EmotionCard({
               <span>Stress Level</span>
               <span>{stressLevel}%</span>
             </div>
-            <Progress value={stressLevel} className="h-2" />
+            <Progress value={stressLevel} className={`h-2 ${getProgressColor(stressLevel, true)}`} />
             
             <div className="flex justify-between text-sm">
               <span>Engagement</span>
               <span>{engagementLevel}%</span>
             </div>
-            <Progress value={engagementLevel} className="h-2" />
+            <Progress value={engagementLevel} className={`h-2 ${getProgressColor(engagementLevel)}`} />
             
             <div className="flex justify-between text-sm">
               <span>Focus</span>
               <span>{focusLevel}%</span>
             </div>
-            <Progress value={focusLevel} className="h-2" />
+            <Progress value={focusLevel} className={`h-2 ${getProgressColor(focusLevel)}`} />
           </div>
         </div>
       </CardContent>
