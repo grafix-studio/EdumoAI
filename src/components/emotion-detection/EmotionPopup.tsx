@@ -1,5 +1,5 @@
 
-import { X, Heart, Frown, HeartCrack } from "lucide-react";
+import { X, Heart, Frown, HeartCrack, Timer } from "lucide-react";
 
 interface EmotionPopupProps {
   showEmotionPopup: boolean;
@@ -23,7 +23,7 @@ export default function EmotionPopup({
             <Frown className="w-5 h-5 text-warning" />
           }
           <h4 className="font-semibold text-lg">
-            {popupEmotion === "stressed" ? "Stress Detected" : "You seem a bit down"}
+            {popupEmotion === "stressed" ? "High Stress Detected" : "You seem a bit down"}
           </h4>
         </div>
         <button 
@@ -35,8 +35,8 @@ export default function EmotionPopup({
       </div>
       <p className="text-sm mb-3">
         {popupEmotion === "stressed" 
-          ? "Taking a short break can help reduce stress levels and improve learning outcomes." 
-          : "A change of pace might help improve your mood and engagement."}
+          ? "Your stress levels appear high. Taking a short break can help reduce stress and improve learning outcomes." 
+          : "Your emotional state appears below neutral. A change of pace might help improve your mood and engagement."}
       </p>
       <div className="text-sm font-medium flex items-center gap-2 text-primary">
         <Heart className="w-4 h-4" />

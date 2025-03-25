@@ -16,7 +16,7 @@ export default function useEmotionDetection() {
   const [lastDetectionTime, setLastDetectionTime] = useState<number>(0);
   const [showEmotionPopup, setShowEmotionPopup] = useState<boolean>(false);
   const [popupEmotion, setPopupEmotion] = useState<string | null>(null);
-  const [timerCount, setTimerCount] = useState<number>(30);
+  const [timerCount, setTimerCount] = useState<number>(15);
 
   // Face detection interval ref
   const faceDetectionIntervalRef = useRef<number | null>(null);
@@ -105,7 +105,7 @@ export default function useEmotionDetection() {
       // Convert canvas to base64 image
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
       setLastDetectionTime(Date.now());
-      setTimerCount(30); // Reset timer
+      setTimerCount(15); // Reset timer to 15 seconds
       
       console.log("Detecting emotion...");
       toast.info("Analyzing your emotional state...");
@@ -154,7 +154,7 @@ export default function useEmotionDetection() {
     }
   };
 
-  // Force an emotion update every 30 seconds, regardless of API success
+  // Force an emotion update every 15 seconds, regardless of API success
   const forceEmotionUpdate = () => {
     if (!isAnalyzing) return;
     
@@ -185,7 +185,7 @@ export default function useEmotionDetection() {
           // If processing fails, force an update
           forceEmotionUpdate();
         });
-        return 30;
+        return 15; // Reset to 15 seconds
       }
       return prev - 1;
     });
