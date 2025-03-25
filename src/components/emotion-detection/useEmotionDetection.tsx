@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { detectEmotionWithFacePlusPlus } from "@/utils/facePlusPlusService";
@@ -17,6 +16,7 @@ export default function useEmotionDetection() {
   const [showEmotionPopup, setShowEmotionPopup] = useState<boolean>(false);
   const [popupEmotion, setPopupEmotion] = useState<string | null>(null);
   const [timerCount, setTimerCount] = useState<number>(15);
+  const [previousEmotion, setPreviousEmotion] = useState<string | null>(null);
 
   // Face detection interval ref
   const timerIntervalRef = useRef<number | null>(null);
@@ -24,6 +24,7 @@ export default function useEmotionDetection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const popupTimeoutRef = useRef<number | null>(null);
+  const detectionInProgressRef = useRef<boolean>(false);
 
   // Request camera permission
   const requestCameraPermission = async () => {
@@ -80,6 +81,10 @@ export default function useEmotionDetection() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log("Microphone permission granted");
       setMicPermission(true);
+      
+      // We don't need to keep the microphone stream
+      stream.getTracks().forEach(track => track.stop());
+      
       return true;
     } catch (error) {
       console.error("Error accessing microphone:", error);
@@ -91,30 +96,36 @@ export default function useEmotionDetection() {
 
   // Process frames to detect emotions using Face++ API
   const processVideoFrame = async () => {
-    if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
+    if (!videoRef.current || !canvasRef.current || !isAnalyzing || detectionInProgressRef.current) return;
     
+    detectionInProgressRef.current = true;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-    if (!context) return;
-    
-    // Draw the current video frame onto the canvas
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    if (!context) {
+      detectionInProgressRef.current = false;
+      return;
+    }
     
     try {
+      // Draw the current video frame onto the canvas
+      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      
       // Convert canvas to base64 image
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
       setLastDetectionTime(Date.now());
       setTimerCount(15); // Reset timer to 15 seconds
       
       console.log("Detecting emotion with Face++ API...");
-      toast.info("Analyzing your emotional state...");
       
       // Call Face++ API for emotion detection
       const emotionResult = await detectEmotionWithFacePlusPlus(imageData);
       
       console.log("Emotion detected:", emotionResult);
       
-      // Update emotion state immediately to reflect changes
+      // Store previous emotion for comparison
+      setPreviousEmotion(currentEmotion);
+      
+      // Update emotion state
       setCurrentEmotion(emotionResult.emotion);
       
       // Update emotion history
@@ -124,22 +135,25 @@ export default function useEmotionDetection() {
         score: emotionResult.confidence
       }].slice(-12)); // Keep last 12 emotions
       
-      // Update metrics based on emotion immediately
+      // Update metrics based on emotion
       updateMetricsBasedOnEmotion(emotionResult.emotion);
       
-      // Show popup for stress or sad emotions
-      if (emotionResult.emotion === "stressed" || emotionResult.emotion === "sad") {
-        showEmotionalSupportPopup(emotionResult.emotion);
+      // Show popup for significant emotional changes, stress or sad emotions
+      if (emotionResult.emotion !== previousEmotion) {
+        if (emotionResult.emotion === "stressed" || emotionResult.emotion === "sad") {
+          showEmotionalSupportPopup(emotionResult.emotion);
+        }
       }
       
-      toast.success(`Emotion detected: ${emotionResult.emotion}`);
+      console.log(`Emotion updated to: ${emotionResult.emotion}`);
     } catch (error) {
       console.error("Error detecting emotion:", error);
       
-      // If API fails, use a fallback approach
+      // If API fails, use a fallback approach with simulated data
       const dummyEmotions = ["happy", "focused", "neutral", "confused", "sad", "stressed"];
       const randomEmotion = dummyEmotions[Math.floor(Math.random() * dummyEmotions.length)];
       
+      setPreviousEmotion(currentEmotion);
       setCurrentEmotion(randomEmotion);
       setEmotionHistory(prev => [...prev, {
         emotion: randomEmotion,
@@ -149,41 +163,22 @@ export default function useEmotionDetection() {
       
       updateMetricsBasedOnEmotion(randomEmotion);
       
-      toast.error("Error analyzing emotion. Using simulated data.");
+      if (randomEmotion === "stressed" || randomEmotion === "sad") {
+        showEmotionalSupportPopup(randomEmotion);
+      }
+      
+      console.log(`Using simulated emotion: ${randomEmotion}`);
+    } finally {
+      detectionInProgressRef.current = false;
     }
-  };
-
-  // Force an emotion update every 15 seconds, regardless of API success
-  const forceEmotionUpdate = () => {
-    if (!isAnalyzing) return;
-    
-    // Get a random emotion
-    const dummyEmotions = ["happy", "focused", "neutral", "confused", "sad", "stressed", "bored"];
-    const randomEmotion = dummyEmotions[Math.floor(Math.random() * dummyEmotions.length)];
-    
-    // Update state with new emotion
-    setCurrentEmotion(randomEmotion);
-    setEmotionHistory(prev => [...prev, {
-      emotion: randomEmotion,
-      timestamp: Date.now(),
-      score: 0.7 + Math.random() * 0.3
-    }].slice(-12));
-    
-    // Update metrics
-    updateMetricsBasedOnEmotion(randomEmotion);
-    
-    console.log("Forced emotion update to:", randomEmotion);
   };
 
   // Update the timer countdown
   const updateTimer = () => {
     setTimerCount(prev => {
       if (prev <= 1) {
-        // When timer reaches 0, try to process a frame or force an update
-        processVideoFrame().catch(() => {
-          // If processing fails, force an update
-          forceEmotionUpdate();
-        });
+        // When timer reaches 0, process a frame
+        processVideoFrame();
         return 15; // Reset to 15 seconds
       }
       return prev - 1;
@@ -207,9 +202,9 @@ export default function useEmotionDetection() {
     }, 8000);
   };
 
-  // Update metrics based on detected emotion - more dynamic range for better visualization
+  // Update metrics based on detected emotion - dynamic range for better visualization
   const updateMetricsBasedOnEmotion = (emotion: string) => {
-    // Update stress level based on emotion - more dramatic changes
+    // Update stress level based on emotion
     if (emotion === "stressed") {
       setStressLevel(75 + Math.floor(Math.random() * 25));
     } else if (emotion === "confused") {
@@ -226,7 +221,7 @@ export default function useEmotionDetection() {
       setStressLevel(15 + Math.floor(Math.random() * 20));
     }
     
-    // Update engagement level - more dramatic changes
+    // Update engagement level
     if (emotion === "focused" || emotion === "happy") {
       setEngagementLevel(80 + Math.floor(Math.random() * 20));
     } else if (emotion === "neutral") {
@@ -239,7 +234,7 @@ export default function useEmotionDetection() {
       setEngagementLevel(30 + Math.floor(Math.random() * 40));
     }
     
-    // Update focus level - more dramatic changes
+    // Update focus level
     if (emotion === "focused") {
       setFocusLevel(85 + Math.floor(Math.random() * 15));
     } else if (emotion === "happy") {
@@ -276,27 +271,13 @@ export default function useEmotionDetection() {
     const hasCamera = await requestCameraPermission();
     const hasMic = micPermission || await requestMicPermission();
     
-    if (hasCamera && hasMic) {
+    if (hasCamera) {
       setIsAnalyzing(true);
       toast.success("Emotion detection started");
       
-      // Initialize the first emotion if not set
-      if (!currentEmotion) {
-        setCurrentEmotion("neutral");
-        setEmotionHistory([{
-          emotion: "neutral", 
-          timestamp: Date.now(),
-          score: 0.8
-        }]);
-        updateMetricsBasedOnEmotion("neutral");
-      }
-      
-      // Process immediately on start
+      // Initialize the first emotion detection immediately
       setTimeout(() => {
-        processVideoFrame().catch(() => {
-          // If processing fails, force an update
-          forceEmotionUpdate();
-        });
+        processVideoFrame();
       }, 1000);
       
       // Set up timer interval (every 1 second for countdown)
@@ -304,7 +285,7 @@ export default function useEmotionDetection() {
         timerIntervalRef.current = window.setInterval(updateTimer, 1000);
       }
     } else {
-      toast.error("Both camera and microphone access are required for emotion detection");
+      toast.error("Camera access is required for emotion detection");
     }
   };
 

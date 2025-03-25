@@ -36,6 +36,26 @@ export default function EmotionCard({
     }
   };
 
+  // Get emotion icon
+  const getEmotionIcon = (emotion: string | null) => {
+    if (!emotion) return <Meh className="w-4 h-4" />;
+    
+    switch (emotion) {
+      case "happy":
+        return <Smile className="w-4 h-4" />;
+      case "sad":
+        return <Frown className="w-4 h-4" />;
+      case "stressed":
+        return <HeartCrack className="w-4 h-4" />;
+      case "confused":
+        return <AlertTriangle className="w-4 h-4" />;
+      case "focused":
+        return <Brain className="w-4 h-4" />;
+      default:
+        return <Meh className="w-4 h-4" />;
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -45,13 +65,7 @@ export default function EmotionCard({
         <div className="grid gap-4">
           {currentEmotion ? (
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border ${getEmotionColor(currentEmotion)}`}>
-              {currentEmotion === "happy" && <Smile className="w-4 h-4" />}
-              {currentEmotion === "sad" && <Frown className="w-4 h-4" />}
-              {currentEmotion === "neutral" && <Meh className="w-4 h-4" />}
-              {currentEmotion === "focused" && <Brain className="w-4 h-4" />}
-              {currentEmotion === "confused" && <AlertTriangle className="w-4 h-4" />}
-              {currentEmotion === "stressed" && <HeartCrack className="w-4 h-4" />}
-              {currentEmotion === "bored" && <Meh className="w-4 h-4" />}
+              {getEmotionIcon(currentEmotion)}
               {currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}
             </div>
           ) : (
