@@ -1,12 +1,14 @@
 
 import { useState, useEffect, createContext, useContext } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: () => void;
-  signUp: () => void;
+  signIn: (email: string, password: string) => void;
+  signUp: (email: string, password: string, name: string) => void;
+  signInWithGoogle: () => void;
   signOut: () => void;
 }
 
@@ -14,6 +16,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  photoUrl?: string;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,12 +24,14 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: () => {},
   signUp: () => {},
+  signInWithGoogle: () => {},
   signOut: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is logged in from localStorage
@@ -37,40 +42,87 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const signIn = () => {
-    // For demo purposes, show a modal or form for sign in
-    const mockUser = {
-      id: "user-" + Math.random().toString(36).substr(2, 9),
-      email: "demo@example.com",
-      name: "Demo User",
-    };
+  const signIn = (email: string, password: string) => {
+    // For demo purposes, simulate API call delay
+    setLoading(true);
     
-    setUser(mockUser);
-    localStorage.setItem("eduSenseUser", JSON.stringify(mockUser));
-    toast.success("Successfully signed in!");
+    // Simulate validation
+    if (!email || !password) {
+      toast.error("Please provide both email and password");
+      setLoading(false);
+      return;
+    }
+    
+    setTimeout(() => {
+      const mockUser = {
+        id: "user-" + Math.random().toString(36).substr(2, 9),
+        email: email,
+        name: email.split('@')[0],
+      };
+      
+      setUser(mockUser);
+      localStorage.setItem("eduSenseUser", JSON.stringify(mockUser));
+      setLoading(false);
+      toast.success("Successfully signed in!");
+      navigate("/");
+    }, 1000);
   };
 
-  const signUp = () => {
-    // For demo purposes, show a modal or form for sign up
-    const mockUser = {
-      id: "user-" + Math.random().toString(36).substr(2, 9),
-      email: "new@example.com",
-      name: "New User",
-    };
+  const signUp = (email: string, password: string, name: string) => {
+    // For demo purposes, simulate API call delay
+    setLoading(true);
     
-    setUser(mockUser);
-    localStorage.setItem("eduSenseUser", JSON.stringify(mockUser));
-    toast.success("Successfully created account!");
+    // Simulate validation
+    if (!email || !password || !name) {
+      toast.error("Please fill out all fields");
+      setLoading(false);
+      return;
+    }
+    
+    setTimeout(() => {
+      const mockUser = {
+        id: "user-" + Math.random().toString(36).substr(2, 9),
+        email: email,
+        name: name,
+      };
+      
+      setUser(mockUser);
+      localStorage.setItem("eduSenseUser", JSON.stringify(mockUser));
+      setLoading(false);
+      toast.success("Successfully created account!");
+      navigate("/");
+    }, 1000);
+  };
+
+  const signInWithGoogle = () => {
+    // For demo purposes, simulate Google sign-in
+    setLoading(true);
+    
+    setTimeout(() => {
+      const mockUser = {
+        id: "google-" + Math.random().toString(36).substr(2, 9),
+        email: "user@gmail.com",
+        name: "Google User",
+        photoUrl: "https://lh3.googleusercontent.com/a/default-user",
+      };
+      
+      setUser(mockUser);
+      localStorage.setItem("eduSenseUser", JSON.stringify(mockUser));
+      setLoading(false);
+      toast.success("Successfully signed in with Google!");
+      navigate("/");
+    }, 1500);
   };
 
   const signOut = () => {
     setUser(null);
     localStorage.removeItem("eduSenseUser");
     toast.info("Successfully signed out");
+    navigate("/signin");
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
