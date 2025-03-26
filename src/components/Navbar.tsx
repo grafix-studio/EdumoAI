@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Menu, X, User, LogIn, LogOut } from "lucide-react";
+import { Menu, X, User as UserIcon, LogIn, LogOut } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -28,6 +29,22 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Get user's display name from metadata or email
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    } else if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    } else {
+      return user?.email?.split('@')[0] || 'User';
+    }
+  };
+
+  // Get user's avatar URL from metadata
+  const getUserAvatarUrl = () => {
+    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  };
 
   return (
     <nav className={`navbar ${isScrolled ? "navbar-scrolled" : ""}`}>
@@ -47,16 +64,19 @@ export default function Navbar() {
                 size="sm"
                 className="flex items-center gap-2"
               >
-                {user.photoUrl ? (
-                  <img 
-                    src={user.photoUrl} 
-                    alt={user.name} 
-                    className="h-6 w-6 rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="h-4 w-4" />
-                )}
-                <span className="hidden md:inline">{user.name}</span>
+                <Avatar className="h-6 w-6">
+                  {getUserAvatarUrl() ? (
+                    <AvatarImage 
+                      src={getUserAvatarUrl()} 
+                      alt={getUserDisplayName()} 
+                    />
+                  ) : (
+                    <AvatarFallback>
+                      <UserIcon className="h-4 w-4" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <span className="hidden md:inline">{getUserDisplayName()}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
