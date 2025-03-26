@@ -114,7 +114,7 @@ export default function useEmotionDetection() {
       
       console.log("Emotion detected:", emotionResult);
       
-      // Update emotion state immediately to reflect changes
+      // Update emotion state
       setCurrentEmotion(emotionResult.emotion);
       
       // Update emotion history
@@ -124,7 +124,7 @@ export default function useEmotionDetection() {
         score: emotionResult.confidence
       }].slice(-12)); // Keep last 12 emotions
       
-      // Update metrics based on emotion immediately
+      // Update metrics based on emotion
       updateMetricsBasedOnEmotion(emotionResult.emotion);
       
       // Show popup for stress or sad emotions
@@ -135,6 +135,7 @@ export default function useEmotionDetection() {
       toast.success(`Emotion detected: ${emotionResult.emotion}`);
     } catch (error) {
       console.error("Error detecting emotion:", error);
+      toast.error("Error analyzing emotion. Using simulated data.");
       
       // If API fails, use a fallback approach
       const dummyEmotions = ["happy", "focused", "neutral", "confused", "sad", "stressed"];
@@ -148,8 +149,6 @@ export default function useEmotionDetection() {
       }].slice(-12));
       
       updateMetricsBasedOnEmotion(randomEmotion);
-      
-      toast.error("Error analyzing emotion. Using simulated data.");
     }
   };
 

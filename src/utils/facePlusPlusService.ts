@@ -13,6 +13,10 @@ interface FacePlusPlusResponse {
       };
     };
   }[];
+  time_used: number;
+  image_id: string;
+  request_id: string;
+  error_message?: string;
 }
 
 export async function detectEmotionWithFacePlusPlus(imageData: string): Promise<{ emotion: string; confidence: number }> {

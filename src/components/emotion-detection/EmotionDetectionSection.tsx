@@ -38,11 +38,11 @@ export default function EmotionDetectionSection() {
       />
       
       <div className="section-header">
-        <span className="chip mb-2">AI-Powered</span>
+        <span className="chip mb-2">Face++ AI-Powered</span>
         <h1 className="text-balance">Real-time Emotion Detection</h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto text-balance">
-          Our advanced AI analyzes your facial expressions and voice to understand your emotional state,
-          helping optimize your learning experience.
+          Utilizing Face++ advanced AI technology to analyze your facial expressions and 
+          understand your emotional state, helping optimize your learning experience.
         </p>
         {isAnalyzing && (
           <div className="mt-4 bg-primary/10 rounded-full px-6 py-2 inline-flex items-center gap-2">
