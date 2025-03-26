@@ -6,15 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const { signIn, signInWithGoogle, loading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    signIn(email, password);
+    setError("");
+    
+    if (!email || !password) {
+      setError("Please provide both email and password");
+      return;
+    }
+    
+    try {
+      await signIn(email, password);
+    } catch (error: any) {
+      setError(error.message || "An error occurred during sign in");
+    }
   };
 
   return (
@@ -30,6 +43,12 @@ export default function SignIn() {
           </div>
 
           <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <Button 
               variant="outline" 
               className="w-full flex items-center justify-center gap-2"

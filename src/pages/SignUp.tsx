@@ -6,16 +6,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const { signUp, signInWithGoogle, loading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    signUp(email, password, name);
+    setError("");
+    
+    if (!email || !password || !name) {
+      setError("Please fill out all fields");
+      return;
+    }
+    
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+    
+    try {
+      await signUp(email, password, name);
+    } catch (error: any) {
+      setError(error.message || "An error occurred during sign up");
+    }
   };
 
   return (
@@ -31,6 +49,12 @@ export default function SignUp() {
           </div>
 
           <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <Button 
               variant="outline" 
               className="w-full flex items-center justify-center gap-2"
