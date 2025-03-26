@@ -16,7 +16,8 @@ export default function useEmotionDetection() {
   const [lastDetectionTime, setLastDetectionTime] = useState<number>(0);
   const [showEmotionPopup, setShowEmotionPopup] = useState<boolean>(false);
   const [popupEmotion, setPopupEmotion] = useState<string | null>(null);
-  const [timerCount, setTimerCount] = useState<number>(15);
+  const [timerCount, setTimerCount] = useState<number>(3);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Face detection interval ref
   const timerIntervalRef = useRef<number | null>(null);
@@ -24,6 +25,8 @@ export default function useEmotionDetection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const popupTimeoutRef = useRef<number | null>(null);
+  const lastApiCallTimeRef = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Request camera permission
   const requestCameraPermission = async () => {
@@ -91,23 +94,41 @@ export default function useEmotionDetection() {
 
   // Process frames to detect emotions using Face++ API
   const processVideoFrame = async () => {
-    if (!videoRef.current || !canvasRef.current || !isAnalyzing) return;
+    if (!videoRef.current || !canvasRef.current || !isAnalyzing || isProcessing) return;
     
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    if (!context) return;
+    // Don't send requests too frequently - implement rate limiting
+    const now = Date.now();
+    const timeSinceLastCall = now - lastApiCallTimeRef.current;
     
-    // Draw the current video frame onto the canvas
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    // Rate limiting to avoid too many API calls (min 1000ms between calls)
+    if (timeSinceLastCall < 1000) {
+      console.log(`Skipping API call, too soon (${timeSinceLastCall}ms since last call)`);
+      return;
+    }
+    
+    setIsProcessing(true);
     
     try {
+      // Cancel any pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+      
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      
+      // Draw the current video frame onto the canvas
+      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      
       // Convert canvas to base64 image
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      setLastDetectionTime(Date.now());
-      setTimerCount(15); // Reset timer to 15 seconds
+      setLastDetectionTime(now);
+      lastApiCallTimeRef.current = now;
+      setTimerCount(3); // Reset timer to 3 seconds
       
       console.log("Detecting emotion with Face++ API...");
-      toast.info("Analyzing your emotional state...");
       
       // Call Face++ API for emotion detection
       const emotionResult = await detectEmotionWithFacePlusPlus(imageData);
@@ -149,6 +170,9 @@ export default function useEmotionDetection() {
       }].slice(-12));
       
       updateMetricsBasedOnEmotion(randomEmotion);
+    } finally {
+      setIsProcessing(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -183,7 +207,7 @@ export default function useEmotionDetection() {
           // If processing fails, force an update
           forceEmotionUpdate();
         });
-        return 15; // Reset to 15 seconds
+        return 3; // Reset to 3 seconds for more frequent updates
       }
       return prev - 1;
     });
@@ -331,6 +355,12 @@ export default function useEmotionDetection() {
       videoRef.current.srcObject = null;
     }
     
+    // Cancel any ongoing API requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
     toast.info("Emotion detection stopped");
   };
 
@@ -347,6 +377,10 @@ export default function useEmotionDetection() {
       
       if (popupTimeoutRef.current !== null) {
         window.clearTimeout(popupTimeoutRef.current);
+      }
+      
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, []);
@@ -369,6 +403,7 @@ export default function useEmotionDetection() {
     videoRef,
     canvasRef,
     startAnalysis,
-    stopAnalysis
+    stopAnalysis,
+    isProcessing
   };
 }

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Camera, Play, X, Loader2, Clock } from "lucide-react";
+import { Camera, Play, X, Loader2, Clock, Scan } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -13,17 +13,19 @@ interface CameraFeedProps {
   stopAnalysis: () => void;
   videoRef: React.RefObject<HTMLVideoElement>;
   canvasRef: React.RefObject<HTMLCanvasElement>;
+  isProcessing?: boolean;
 }
 
 export default function CameraFeed({
   isAnalyzing,
   cameraPermission,
   micPermission,
-  timerCount = 30,
+  timerCount = 3,
   startAnalysis,
   stopAnalysis,
   videoRef,
-  canvasRef
+  canvasRef,
+  isProcessing = false
 }: CameraFeedProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -60,6 +62,15 @@ export default function CameraFeed({
           <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
             <Clock className="w-3 h-3" />
             <span>Next update: {timerCount}s</span>
+          </div>
+        )}
+        
+        {isProcessing && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <Scan className="w-10 h-10 text-primary animate-pulse" />
+              <p className="text-sm font-medium">Analyzing facial expressions...</p>
+            </div>
           </div>
         )}
       </div>
