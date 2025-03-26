@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { Google } from "lucide-react";
+import { LogIn } from "lucide-react";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -37,7 +37,7 @@ export default function SignUp() {
               onClick={signInWithGoogle}
               disabled={loading}
             >
-              <Google className="h-4 w-4" />
+              <LogIn className="h-4 w-4" />
               <span>Sign up with Google</span>
             </Button>
 
