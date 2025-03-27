@@ -1,4 +1,3 @@
-
 import { ExternalLink, Github } from "lucide-react";
 
 export default function Footer() {
@@ -7,26 +6,26 @@ export default function Footer() {
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-6 md:mb-0">
-            <h3 className="text-xl font-display font-bold">EduSense</h3>
+            <h3 className="text-xl font-display font-bold">EdumoAi</h3>
             <p className="text-muted-foreground text-sm mt-1">
               AI-powered education & productivity
             </p>
           </div>
-          
+
           <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-8">
-            <a 
+            <a
               href="#home"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Emotion Detection
             </a>
-            <a 
+            <a
               href="#documents"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Learning Assistant
             </a>
-            <a 
+            <a
               href="#tasks"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -34,14 +33,14 @@ export default function Footer() {
             </a>
           </div>
         </div>
-        
+
         <div className="border-t border-border/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-            &copy; {new Date().getFullYear()} EduSense. All rights reserved.
+            &copy; {new Date().getFullYear()} EdumoAi. All rights reserved.
           </p>
-          
+
           <div className="flex items-center space-x-4">
-            <a 
+            <a
               href="#"
               target="_blank"
               rel="noopener noreferrer"
@@ -49,7 +48,7 @@ export default function Footer() {
             >
               <Github className="w-5 h-5" />
             </a>
-            <a 
+            <a
               href="#"
               target="_blank"
               rel="noopener noreferrer"

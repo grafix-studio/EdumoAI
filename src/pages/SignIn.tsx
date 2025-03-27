@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,12 +16,12 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!email || !password) {
       setError("Please provide both email and password");
       return;
     }
-    
+
     try {
       await signIn(email, password);
     } catch (error: any) {
@@ -38,7 +37,7 @@ export default function SignIn() {
           <div className="text-center">
             <h1 className="text-3xl font-bold">Welcome back</h1>
             <p className="text-muted-foreground mt-2">
-              Sign in to your EduSense account
+              Sign in to your EdumoAi account
             </p>
           </div>
 
@@ -48,9 +47,9 @@ export default function SignIn() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               className="w-full flex items-center justify-center gap-2"
               onClick={signInWithGoogle}
               disabled={loading}
@@ -101,11 +100,7 @@ export default function SignIn() {
                   required
                 />
               </div>
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
@@ -131,11 +126,14 @@ export default function SignIn() {
           <div className="h-full w-full bg-black/30 p-12 flex flex-col justify-end">
             <div className="bg-background/80 backdrop-blur-sm p-8 rounded-xl max-w-md">
               <blockquote className="text-lg font-medium">
-                "EduSense has transformed the way I learn, helping me manage stress and stay focused on what matters."
+                "EdumoAi has transformed the way I learn, helping me manage
+                stress and stay focused on what matters."
               </blockquote>
               <div className="mt-4">
                 <p className="font-semibold">Alex Johnson</p>
-                <p className="text-sm text-muted-foreground">Computer Science Student</p>
+                <p className="text-sm text-muted-foreground">
+                  Computer Science Student
+                </p>
               </div>
             </div>
           </div>

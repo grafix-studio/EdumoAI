@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,17 +17,17 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!email || !password || !name) {
       setError("Please fill out all fields");
       return;
     }
-    
+
     if (password.length < 8) {
       setError("Password must be at least 8 characters long");
       return;
     }
-    
+
     try {
       await signUp(email, password, name);
     } catch (error: any) {
@@ -44,7 +43,7 @@ export default function SignUp() {
           <div className="text-center">
             <h1 className="text-3xl font-bold">Create an account</h1>
             <p className="text-muted-foreground mt-2">
-              Join EduSense and improve your learning experience
+              Join EdumoAi and improve your learning experience
             </p>
           </div>
 
@@ -54,9 +53,9 @@ export default function SignUp() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               className="w-full flex items-center justify-center gap-2"
               onClick={signInWithGoogle}
               disabled={loading}
@@ -113,11 +112,7 @@ export default function SignUp() {
                   Must be at least 8 characters long
                 </p>
               </div>
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Creating account..." : "Create account"}
               </Button>
             </form>
@@ -143,11 +138,14 @@ export default function SignUp() {
           <div className="h-full w-full bg-black/30 p-12 flex flex-col justify-end">
             <div className="bg-background/80 backdrop-blur-sm p-8 rounded-xl max-w-md">
               <blockquote className="text-lg font-medium">
-                "With EduSense, I'm finally able to understand my learning patterns and improve my study habits."
+                "With EdumoAi, I'm finally able to understand my learning
+                patterns and improve my study habits."
               </blockquote>
               <div className="mt-4">
                 <p className="font-semibold">Sarah Chen</p>
-                <p className="text-sm text-muted-foreground">Graduate Student</p>
+                <p className="text-sm text-muted-foreground">
+                  Graduate Student
+                </p>
               </div>
             </div>
           </div>

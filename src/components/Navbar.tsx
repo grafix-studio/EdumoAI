@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Menu, X, User as UserIcon, LogIn, LogOut } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -37,25 +36,29 @@ export default function Navbar() {
     } else if (user?.user_metadata?.full_name) {
       return user.user_metadata.full_name;
     } else {
-      return user?.email?.split('@')[0] || 'User';
+      return user?.email?.split("@")[0] || "User";
     }
   };
 
   // Get user's avatar URL from metadata
   const getUserAvatarUrl = () => {
-    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+    return (
+      user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
+    );
   };
 
   return (
     <nav className={`navbar ${isScrolled ? "navbar-scrolled" : ""}`}>
       <div className="flex items-center">
-        <Link to="/" className="text-xl font-display font-bold">EduSense</Link>
+        <Link to="/" className="text-xl font-display font-bold">
+          EdumoAi
+        </Link>
       </div>
 
       {/* Authentication Button */}
       <div className="flex items-center space-x-2">
         <ThemeToggle />
-        
+
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -66,9 +69,9 @@ export default function Navbar() {
               >
                 <Avatar className="h-6 w-6">
                   {getUserAvatarUrl() ? (
-                    <AvatarImage 
-                      src={getUserAvatarUrl()} 
-                      alt={getUserDisplayName()} 
+                    <AvatarImage
+                      src={getUserAvatarUrl()}
+                      alt={getUserDisplayName()}
                     />
                   ) : (
                     <AvatarFallback>
@@ -103,14 +106,18 @@ export default function Navbar() {
             </Button>
           </Link>
         )}
-        
+
         {/* Mobile Menu Toggle */}
         <div className="md:hidden">
-          <button 
+          <button
             className="p-2 rounded-lg hover:bg-secondary/50 transition-all"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
       </div>
@@ -122,19 +129,13 @@ export default function Navbar() {
             {!user ? (
               <>
                 <Link to="/signin">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                  >
+                  <Button variant="outline" className="w-full justify-start">
                     <LogIn className="h-4 w-4 mr-2" />
                     Sign In
                   </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button
-                    variant="default"
-                    className="w-full justify-start"
-                  >
+                  <Button variant="default" className="w-full justify-start">
                     Sign Up
                   </Button>
                 </Link>

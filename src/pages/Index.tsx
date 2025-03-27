@@ -14,8 +14,12 @@ import { useEmotionStore } from "../store/emotionStore";
 // const EmotionHistory = lazy(() => import("../components/EmotionHistory"));
 // const StressAlert = lazy(() => import("../components/StressAlert"));
 
-const MindActivitiesSection = lazy(() => import("../components/MindActivitiesSection"));
-const TaskManagerSection = lazy(() => import("../components/TaskManagerSection"));
+const MindActivitiesSection = lazy(
+  () => import("../components/MindActivitiesSection")
+);
+const TaskManagerSection = lazy(
+  () => import("../components/TaskManagerSection")
+);
 const MentorshipSection = lazy(() => import("../components/MentorshipSection"));
 const TeamSection = lazy(() => import("../components/TeamSection"));
 
@@ -30,7 +34,6 @@ export default function Index() {
   const [emotionHistory, setEmotionHistory] = useState<EmotionData[]>([]);
   const [showStressAlert, setShowStressAlert] = useState(false);
   const isDarkMode = useEmotionStore((state) => state.isDarkMode);
-  
 
   const handleEmotionDetected = (emotion: EmotionData) => {
     setEmotionHistory((prev) => [...prev, emotion]);
@@ -56,29 +59,40 @@ export default function Index() {
         {/* Hero Section */}
         <section className="hero-section py-24 md:py-32 px-4 md:px-6 text-center">
           <div className="container mx-auto">
-            <span className="chip mb-4">Welcome to EduSense</span>
+            <span className="chip mb-4">Welcome to EdumoAi</span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              AI-Powered Education & Productivity Platform
+              AI - Powered Emotional Intelligence Tutor
             </h1>
             <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-6">
-              Enhance learning experiences, improve cognitive abilities, and boost productivity with our suite of AI-powered tools.
+              Enhance learning experiences, improve cognitive abilities, and
+              boost productivity with our suite of AI-powered tools.
             </p>
             <div className="max-w-2xl mx-auto mb-12 p-4 bg-secondary/30 rounded-lg border border-border/50">
               <p className="text-primary italic">
-                Welcome to our educational platform that adapts to your learning style.
-                Start by exploring our key features below!
+                Welcome to our educational platform that adapts to your learning
+                style. Start by exploring our key features below!
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-              <Button className="p-6 h-auto text-lg font-medium flex flex-col gap-2" onClick={() => scrollToSection("documents")}>
+              <Button
+                className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
+                onClick={() => scrollToSection("documents")}
+              >
                 <BookOpen className="h-6 w-6" />
                 <span className="text-xl font-bold">Learning Assistant</span>
-                <span className="text-sm font-normal">AI-powered document analysis</span>
+                <span className="text-sm font-normal">
+                  AI-powered document analysis
+                </span>
               </Button>
-              <Button className="p-6 h-auto text-lg font-medium flex flex-col gap-2" onClick={() => scrollToSection("tasks")}>
+              <Button
+                className="p-6 h-auto text-lg font-medium flex flex-col gap-2"
+                onClick={() => scrollToSection("tasks")}
+              >
                 <CheckSquare className="h-6 w-6" />
                 <span className="text-xl font-bold">Task Manager</span>
-                <span className="text-sm font-normal">Organize your learning journey</span>
+                <span className="text-sm font-normal">
+                  Organize your learning journey
+                </span>
               </Button>
             </div>
           </div>
@@ -86,7 +100,7 @@ export default function Index() {
 
         {/* Emotion Detection Section */}
         <div className="p-4 max-w-5xl mx-auto ">
-           <EmotionDetection />
+          <EmotionDetection />
         </div>
 
         {/* Features Sections */}
@@ -112,7 +126,6 @@ export default function Index() {
           </Suspense>
         </div>
       </main>
-
 
       <Footer />
     </div>

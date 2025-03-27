@@ -23,11 +23,11 @@ export default function MentorshipSection() {
           <div className="glass-card p-6 max-w-md w-full">
             <div className="flex flex-col items-center text-center mb-6">
               <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage src="https://randomuser.me/api/portraits/women/44.jpg" alt="Dr. Sarah Chen" />
+                <AvatarImage src="src\assets\images\ap.jpg" alt="Mr. Ramesh Kalyan G" />
                 <AvatarFallback>SC</AvatarFallback>
               </Avatar>
-              <h3 className="text-xl font-semibold">Dr. Sarah Chen</h3>
-              <p className="text-muted-foreground">Educational Psychology Ph.D.</p>
+              <h3 className="text-xl font-semibold">Mr. Ramesh Kalyan G</h3>
+              <p className="text-muted-foreground">Assistant Professor</p>
               <div className="flex items-center gap-1 mt-2 flex-wrap justify-center">
                 <Badge variant="outline" className="bg-primary/10 m-1">Learning Specialist</Badge>
                 <Badge variant="outline" className="bg-primary/10 m-1">Cognitive Science</Badge>
@@ -37,16 +37,12 @@ export default function MentorshipSection() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm">sarah.chen@edusense.ai</span>
+                <span className="text-sm">rameshkalyan@edusence.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm">+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm">www.sarahchen.edu</span>
-              </div>
+                <span className="text-sm">+91 99650 10394</span>
+              </div>  
             </div>
 
             <div className="mt-6 flex justify-center space-x-3">

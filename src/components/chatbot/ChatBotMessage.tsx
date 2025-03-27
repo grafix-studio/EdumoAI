@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -10,12 +9,9 @@ interface ChatBotMessageProps {
 
 export default function ChatBotMessage({ message }: ChatBotMessageProps) {
   const isUser = message.role === "user";
-  
+
   return (
-    <div className={cn(
-      "flex items-start gap-3",
-      isUser && "flex-row-reverse"
-    )}>
+    <div className={cn("flex items-start gap-3", isUser && "flex-row-reverse")}>
       <Avatar className="h-8 w-8">
         {isUser ? (
           <>
@@ -24,16 +20,18 @@ export default function ChatBotMessage({ message }: ChatBotMessageProps) {
           </>
         ) : (
           <>
-            <AvatarImage src="/logo.svg" alt="EduSense" />
+            <AvatarImage src="/logo.svg" alt="EdumoAi" />
             <AvatarFallback>ES</AvatarFallback>
           </>
         )}
       </Avatar>
-      
-      <div className={cn(
-        "p-3 rounded-lg max-w-[80%]",
-        isUser ? "bg-primary text-primary-foreground" : "bg-muted"
-      )}>
+
+      <div
+        className={cn(
+          "p-3 rounded-lg max-w-[80%]",
+          isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+        )}
+      >
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
       </div>
     </div>
