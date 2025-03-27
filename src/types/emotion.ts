@@ -5,18 +5,18 @@ export interface EmotionData {
   stress_level: number;
 }
 
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
+export interface EmotionState {
+  emotions: EmotionData[];
+  isDarkMode: boolean;
+  addEmotion: (emotion: EmotionData) => void;
+  toggleTheme: () => void;
 }
 
-export interface EmotionAnalysis {
-  dominant_emotion: string;
-  emotions: {
-    happiness: number;
-    sadness: number;
-    confusion: number;
-    frustration: number;
-    stress: number;
+export interface APIKeys {
+  huggingface: string;
+  mistral: string;
+  facePlusPlus: {
+    key: string;
+    secret: string;
   };
 }
