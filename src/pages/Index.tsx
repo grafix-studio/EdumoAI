@@ -6,13 +6,18 @@ import DocumentLearningSection from "../components/DocumentLearningSection";
 import { Button } from "@/components/ui/button";
 import { EmotionData } from "../types/emotion";
 
+import EmotionDetection from "../components/EmotionDetection";
+import { useEmotionStore } from "../store/emotionStore";
+
 // Lazy load components
-const EmotionDetector = lazy(() => import("../components/EmotionDetector"));
-const EmotionHistory = lazy(() => import("../components/EmotionHistory"));
-const StressAlert = lazy(() => import("../components/StressAlert"));
+// const EmotionDetector = lazy(() => import("../components/EmotionDetector"));
+// const EmotionHistory = lazy(() => import("../components/EmotionHistory"));
+// const StressAlert = lazy(() => import("../components/StressAlert"));
+
 const MindActivitiesSection = lazy(() => import("../components/MindActivitiesSection"));
 const TaskManagerSection = lazy(() => import("../components/TaskManagerSection"));
 const MentorshipSection = lazy(() => import("../components/MentorshipSection"));
+const TeamSection = lazy(() => import("../components/TeamSection"));
 
 // Loading component
 const SectionLoader = () => (
@@ -24,6 +29,8 @@ const SectionLoader = () => (
 export default function Index() {
   const [emotionHistory, setEmotionHistory] = useState<EmotionData[]>([]);
   const [showStressAlert, setShowStressAlert] = useState(false);
+  const isDarkMode = useEmotionStore((state) => state.isDarkMode);
+  
 
   const handleEmotionDetected = (emotion: EmotionData) => {
     setEmotionHistory((prev) => [...prev, emotion]);
@@ -77,64 +84,17 @@ export default function Index() {
           </div>
         </section>
 
+        {/* Emotion Detection Section */}
+        <div className="p-4 max-w-5xl mx-auto ">
+           <EmotionDetection />
+        </div>
+
+        {/* Features Sections */}
         <div id="features" className="space-y-24 md:space-y-32 mb-24">
-          <Suspense fallback={<SectionLoader />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start p-6">
-
-              {/* Left Side: Emotion Detector & Default Status Below */}
-              <div className="flex flex-col w-full items-center gap-4">
-
-                {/* Emotion Detector */}
-                <EmotionDetector onEmotionDetected={handleEmotionDetected} />
-
-                {/* Default Visible - Current Status Section */}
-                <div className="bg-gray-100 w-full p-6 rounded-lg shadow-md">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Activity className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
-                    <h2 className="text-lg md:text-xl font-semibold">Current Status</h2>
-                  </div>
-                  <p className="text-base md:text-lg">
-                    Current Emotion: <span className="font-semibold">
-                      {emotionHistory.length > 0 ? emotionHistory[emotionHistory.length - 1].emotion : "Neutral"}
-                    </span>
-                  </p>
-                  <p className="text-base md:text-lg">
-                    Stress Level: <span className="font-semibold">
-                      {emotionHistory.length > 0 ? `${Math.round(emotionHistory[emotionHistory.length - 1].stress_level * 100)}%` : "0%"}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Side: Emotion History - Default Visible with Zero Graph */}
-              <div className="bg-gray-50 w-full p-6 rounded-lg shadow-md">
-                <h2 className="text-lg md:text-xl font-semibold mb-4">Emotion History</h2>
-
-                {/* Scrollable Chart Section - Starts with Empty Data */}
-                <div className="max-h-[400px] overflow-y-auto bg-white p-4 rounded-lg shadow-inner">
-                  <Suspense fallback={<SectionLoader />}>
-                    <EmotionHistory emotionHistory={emotionHistory} />
-                  </Suspense>
-                </div>
-              </div>
-            </div>
-          </Suspense>
-
-
-
-          {/* Stress Alert */}
-          {showStressAlert && (
-            <Suspense fallback={<SectionLoader />}>
-              <StressAlert onClose={() => setShowStressAlert(false)} />
-            </Suspense>
-          )}
-
-          {/* Document Learning Section */}
           <Suspense fallback={<SectionLoader />}>
             <DocumentLearningSection />
           </Suspense>
 
-          {/* Other Sections */}
           <Suspense fallback={<SectionLoader />}>
             <MindActivitiesSection />
           </Suspense>
@@ -147,8 +107,12 @@ export default function Index() {
             <MentorshipSection />
           </Suspense>
 
+          <Suspense fallback={<SectionLoader />}>
+            <TeamSection />
+          </Suspense>
         </div>
       </main>
+
 
       <Footer />
     </div>
