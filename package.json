@@ -12,7 +12,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
+<<<<<<< HEAD
     "@mistralai/mistralai": "^1.5.2",
+=======
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -40,10 +43,14 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
+<<<<<<< HEAD
     "@supabase/supabase-js": "^2.49.3",
     "@tanstack/react-query": "^5.56.2",
     "axios": "^1.8.4",
     "chart.js": "^4.4.8",
+=======
+    "@tanstack/react-query": "^5.56.2",
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -52,23 +59,34 @@
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+<<<<<<< HEAD
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^3.11.174",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.3.0",
+=======
+    "react": "^18.3.1",
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
     "react-resizable-panels": "^2.1.3",
     "react-router-dom": "^6.26.2",
+<<<<<<< HEAD
     "react-webcam": "^7.2.0",
+=======
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
     "recharts": "^2.12.7",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
+<<<<<<< HEAD
     "zod": "^3.23.8",
     "zustand": "^5.0.3"
+=======
+    "zod": "^3.23.8"
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

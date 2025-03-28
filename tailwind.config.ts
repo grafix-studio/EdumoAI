@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
 import type { Config } from "tailwindcss";
 
 export default {
@@ -62,6 +65,7 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+<<<<<<< HEAD
 				},
 				success: {
 					DEFAULT: 'hsl(var(--success))',
@@ -74,6 +78,8 @@ export default {
 				danger: {
 					DEFAULT: 'hsl(var(--danger))',
 					foreground: 'hsl(var(--danger-foreground))'
+=======
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
 				}
 			},
 			borderRadius: {
@@ -83,6 +89,7 @@ export default {
 			},
 			keyframes: {
 				'accordion-down': {
+<<<<<<< HEAD
 					from: { height: '0' },
 					to: { height: 'var(--radix-accordion-content-height)' }
 				},
@@ -141,10 +148,27 @@ export default {
 				'float': {
 					'0%, 100%': { transform: 'translateY(0)' },
 					'50%': { transform: 'translateY(-10px)' }
+=======
+					from: {
+						height: '0'
+					},
+					to: {
+						height: 'var(--radix-accordion-content-height)'
+					}
+				},
+				'accordion-up': {
+					from: {
+						height: 'var(--radix-accordion-content-height)'
+					},
+					to: {
+						height: '0'
+					}
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
+<<<<<<< HEAD
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
 				'fade-out': 'fade-out 0.3s ease-out',
@@ -172,6 +196,9 @@ export default {
 			},
 			transitionTimingFunction: {
 				'apple': 'cubic-bezier(0.4, 0.0, 0.2, 1)'
+=======
+				'accordion-up': 'accordion-up 0.2s ease-out'
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
 			}
 		}
 	},

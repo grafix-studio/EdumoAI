@@ -1,10 +1,14 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+<<<<<<< HEAD
 
 /**
  * Shuffles an array using the Fisher-Yates algorithm
@@ -23,3 +27,5 @@ export function shuffle<T>(array: T[]): T[] {
   
   return newArray;
 }
+=======
+>>>>>>> b2ce6820 (Use tech stack vite_react_shadcn_ts)
